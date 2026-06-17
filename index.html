@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VCATCH Chat</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<!-- Firebase App (the core Firebase SDK) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<!-- Firebase Auth -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<!-- Firebase Storage -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<style>
+  :root {
+    --gold: #E8A020;
+    --gold-light: #FAC75A;
+    --gold-dark: #A06010;
+    --gold-bg: #FDF5E6;
+    --black: #18181A;
+    --gray-100: #F5F5F3;
+    --gray-200: #E8E8E4;
+    --gray-400: #A8A8A2;
+    --gray-600: #6B6B65;
+    --white: #FFFFFF;
+    --danger: #E24B4A;
+    --success: #1D9E75;
+    --info: #378ADD;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --sidebar-w: 280px;
+    --header-h: 60px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gray-100); color: var(--black); overflow: hidden; height: 100vh; }
+
+  /* AUTH SCREENS */
+  .auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #18181A 60%, #2A2008 100%); }
+  .auth-card { background: var(--white); border-radius: var(--radius-xl); padding: 40px 36px; width: 100%; max-width: 400px; box-shadow: 0 24px 64px rgba(0,0,0,0.18); }
+  .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; justify-content: center; }
+  .auth-logo-diamond { width: 42px; height: 42px; }
+  .auth-logo-text { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: var(--black); }
+  .auth-logo-text span { color: var(--gold); }
+  .auth-tagline { text-align: center; font-size: 13px; color: var(--gray-600); margin-bottom: 28px; }
+  .auth-tabs { display: flex; background: var(--gray-100); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 24px; }
+  .auth-tab { flex: 1; text-align: center; padding: 8px; font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; color: var(--gray-600); border: none; background: none; transition: all 0.2s; }
+  .auth-tab.active { background: var(--white); color: var(--black); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 6px; letter-spacing: 0.4px; text-transform: uppercase; }
+  .form-input { width: 100%; padding: 10px 14px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 14px; color: var(--black); background: var(--white); transition: border-color 0.2s; outline: none; }
+  .form-input:focus { border-color: var(--gold); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-primary { width: 100%; padding: 12px; background: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; color: var(--black); cursor: pointer; transition: background 0.2s; }
+  .btn-primary:hover { background: var(--gold-light); }
+  .auth-divider { text-align: center; font-size: 12px; color: var(--gray-400); margin: 16px 0; }
+  .auth-switch { text-align: center; font-size: 13px; color: var(--gray-600); }
+  .auth-switch a { color: var(--gold-dark); font-weight: 600; cursor: pointer; text-decoration: none; }
+  .input-group { position: relative; }
+  .input-group .form-input { padding-left: 40px; }
+  .input-group .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 16px; }
+
+  /* MAIN APP */
+  .app { display: flex; height: 100vh; }
+  .hidden { display: none !important; }
+
+  /* SIDEBAR */
+  .sidebar { width: var(--sidebar-w); background: var(--black); display: flex; flex-direction: column; flex-shrink: 0; }
+  .sidebar-header { padding: 16px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .brand-diamond { width: 30px; height: 30px; }
+  .brand-name { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.3px; }
+  .brand-name span { color: var(--gold); }
+  .user-pill { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 8px 10px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--black); flex-shrink: 0; }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 13px; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-emp { font-size: 11px; color: var(--gray-400); }
+  .online-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; flex-shrink: 0; }
+
+  .sidebar-search { padding: 12px 16px; }
+  .search-box { position: relative; }
+  .search-box input { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm); padding: 8px 12px 8px 34px; font-size: 13px; color: var(--white); outline: none; }
+  .search-box input::placeholder { color: var(--gray-400); }
+  .search-box .ti { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--gray-400); font-size: 15px; }
+
+  .sidebar-section { padding: 8px 16px 4px; }
+  .sidebar-section-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--gray-400); text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; }
+  .sidebar-add { background: none; border: none; color: var(--gray-400); cursor: pointer; padding: 2px; font-size: 16px; display: flex; align-items: center; transition: color 0.2s; }
+  .sidebar-add:hover { color: var(--gold); }
+
+  .chat-list { flex: 1; overflow-y: auto; padding: 4px 8px; }
+  .chat-list::-webkit-scrollbar { width: 4px; }
+  .chat-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+  .chat-item { display: flex; align-items: center; gap: 10px; padding: 10px 10px; border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s; position: relative; }
+  .chat-item:hover, .chat-item.active { background: rgba(255,255,255,0.08); }
+  .chat-item.active { background: rgba(232,160,32,0.15); }
+  .chat-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--gray-600); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--white); flex-shrink: 0; position: relative; }
+  .chat-avatar.group { border-radius: var(--radius-sm); background: rgba(232,160,32,0.2); color: var(--gold-light); }
+  .chat-avatar.broadcast { border-radius: var(--radius-sm); background: rgba(55,138,221,0.2); color: #85B7EB; }
+  .presence { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; background: var(--success); border-radius: 50%; border: 2px solid var(--black); }
+  .chat-meta { flex: 1; min-width: 0; }
+  .chat-name { font-size: 13px; font-weight: 500; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat-preview { font-size: 11px; color: var(--gray-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .chat-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .chat-time { font-size: 10px; color: var(--gray-400); }
+  .chat-badge { background: var(--gold); color: var(--black); font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 6px; min-width: 18px; text-align: center; }
+
+  .sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 8px; }
+  .sidebar-icon-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: var(--radius-sm); background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 18px; transition: all 0.2s; }
+  .sidebar-icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+
+  /* MAIN CHAT AREA */
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: var(--white); }
+  .chat-header { height: var(--header-h); border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; padding: 0 20px; gap: 12px; flex-shrink: 0; }
+  .chat-header-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--gray-600); flex-shrink: 0; }
+  .chat-header-avatar.group { border-radius: var(--radius-sm); background: var(--gold-bg); color: var(--gold-dark); }
+  .chat-header-avatar.broadcast { border-radius: var(--radius-sm); background: #E6F1FB; color: var(--info); }
+  .chat-header-info { flex: 1; }
+  .chat-header-name { font-size: 15px; font-weight: 600; color: var(--black); }
+  .chat-header-status { font-size: 12px; color: var(--gray-400); }
+  .chat-header-actions { display: flex; gap: 4px; }
+  .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-sm); border: none; background: none; color: var(--gray-600); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: background 0.15s; }
+  .icon-btn:hover { background: var(--gray-100); color: var(--black); }
+  .icon-btn.danger:hover { background: #FCEBEB; color: var(--danger); }
+
+  /* MESSAGES */
+  .messages-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+  .messages-area::-webkit-scrollbar { width: 5px; }
+  .messages-area::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
+  .msg-day { text-align: center; margin: 12px 0; }
+  .msg-day span { font-size: 11px; color: var(--gray-400); background: var(--gray-100); padding: 4px 12px; border-radius: 20px; }
+  .msg-wrap { display: flex; align-items: flex-end; gap: 8px; }
+  .msg-wrap.mine { flex-direction: row-reverse; }
+  .msg-avatar-sm { width: 28px; height: 28px; border-radius: 50%; background: var(--gray-200); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--gray-600); flex-shrink: 0; }
+  .msg-bubble { max-width: 65%; }
+  .msg-sender-name { font-size: 11px; color: var(--gray-400); margin-bottom: 3px; padding-left: 2px; }
+  .msg-content { background: var(--gray-100); padding: 10px 14px; border-radius: var(--radius-md) var(--radius-md) var(--radius-md) 4px; font-size: 14px; line-height: 1.5; color: var(--black); position: relative; }
+  .msg-wrap.mine .msg-content { background: var(--gold); color: var(--black); border-radius: var(--radius-md) var(--radius-md) 4px var(--radius-md); }
+  .msg-time { font-size: 10px; color: var(--gray-400); margin-top: 3px; padding: 0 2px; display: flex; align-items: center; gap: 4px; }
+  .msg-wrap.mine .msg-time { justify-content: flex-end; }
+  .msg-tick { color: var(--info); font-size: 13px; }
+  .msg-voice { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+  .voice-play { width: 32px; height: 32px; border-radius: 50%; background: var(--gold-dark); color: var(--white); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .msg-wrap.mine .voice-play { background: rgba(0,0,0,0.2); }
+  .voice-wave { flex: 1; height: 28px; display: flex; align-items: center; gap: 2px; }
+  .voice-bar { width: 3px; background: var(--gold-dark); border-radius: 2px; opacity: 0.6; }
+  .msg-wrap.mine .voice-bar { background: rgba(0,0,0,0.4); }
+  .voice-dur { font-size: 11px; color: var(--gray-600); flex-shrink: 0; }
+  .msg-wrap.mine .voice-dur { color: rgba(0,0,0,0.6); }
+  .msg-image { width: 180px; border-radius: var(--radius-sm); overflow: hidden; background: var(--gray-200); }
+  .msg-image-ph { width: 180px; height: 120px; background: var(--gray-200); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--gray-400); font-size: 12px; }
+  .msg-context-menu { position: absolute; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 100; min-width: 140px; overflow: hidden; }
+  .msg-ctx-item { display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 13px; cursor: pointer; color: var(--black); transition: background 0.15s; }
+  .msg-ctx-item:hover { background: var(--gray-100); }
+  .msg-ctx-item.danger { color: var(--danger); }
+  .msg-ctx-item .ti { font-size: 15px; }
+  .msg-edited { font-size: 10px; color: var(--gray-400); font-style: italic; }
+  .msg-deleted { font-style: italic; color: var(--gray-400); font-size: 13px; }
+
+  /* INPUT BAR */
+  .input-bar { padding: 12px 16px; border-top: 1px solid var(--gray-200); display: flex; align-items: flex-end; gap: 8px; }
+  .input-tools { display: flex; gap: 2px; }
+  .msg-input-wrap { flex: 1; background: var(--gray-100); border-radius: var(--radius-lg); padding: 10px 14px; min-height: 42px; max-height: 120px; overflow-y: auto; font-size: 14px; color: var(--black); outline: none; }
+  .msg-input-wrap:empty:before { content: attr(data-placeholder); color: var(--gray-400); }
+  .send-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--gold); border: none; color: var(--black); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background 0.2s; }
+  .send-btn:hover { background: var(--gold-light); }
+  .voice-record-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--gray-200); border: none; color: var(--gray-600); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: all 0.2s; }
+  .voice-record-btn:hover { background: #FCEBEB; color: var(--danger); }
+  .voice-record-btn.recording { background: var(--danger); color: var(--white); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+  .recording-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: #FCEBEB; border-radius: var(--radius-lg); flex: 1; }
+  .rec-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite; }
+  .rec-time { font-size: 14px; font-weight: 600; color: var(--danger); flex: 1; }
+  .rec-cancel { font-size: 12px; color: var(--gray-600); cursor: pointer; }
+
+  /* WELCOME */
+  .welcome-pane { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--gray-400); }
+  .welcome-diamond { width: 64px; height: 64px; opacity: 0.3; }
+  .welcome-pane h2 { font-size: 20px; font-weight: 600; color: var(--gray-600); }
+  .welcome-pane p { font-size: 14px; text-align: center; max-width: 300px; }
+
+  /* MODALS */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; }
+  .modal { background: var(--white); border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--black); margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-close { background: none; border: none; color: var(--gray-400); cursor: pointer; font-size: 20px; display: flex; }
+  .modal-close:hover { color: var(--black); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-secondary { flex: 1; padding: 10px; background: var(--gray-100); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; color: var(--gray-600); cursor: pointer; transition: background 0.2s; }
+  .btn-secondary:hover { background: var(--gray-200); }
+  .btn-danger { flex: 1; padding: 10px; background: var(--danger); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; color: var(--white); cursor: pointer; }
+  .btn-gold { flex: 1; padding: 10px; background: var(--gold); border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; color: var(--black); cursor: pointer; }
+  .user-picker { max-height: 200px; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); margin-top: 8px; }
+  .user-pick-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; transition: background 0.15s; }
+  .user-pick-item:hover { background: var(--gray-100); }
+  .user-pick-item.selected { background: var(--gold-bg); }
+  .user-pick-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--black); }
+  .user-pick-name { font-size: 13px; font-weight: 500; }
+  .user-pick-emp { font-size: 11px; color: var(--gray-400); }
+  .check-icon { margin-left: auto; color: var(--gold-dark); font-size: 16px; }
+  .member-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { display: flex; align-items: center; gap: 6px; background: var(--gold-bg); color: var(--gold-dark); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .chip-remove { cursor: pointer; font-size: 14px; color: var(--gold); display: flex; }
+  .chip-remove:hover { color: var(--danger); }
+
+  /* TOAST */
+  .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+  .toast { background: var(--black); color: var(--white); padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; }
+  .toast.success { background: var(--success); }
+  .toast.danger { background: var(--danger); }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  /* BROADCAST */
+  .broadcast-header { background: linear-gradient(135deg, #E6F1FB, #FFFFFF); }
+
+  /* RIGHT PANEL */
+  .right-panel { width: 280px; border-left: 1px solid var(--gray-200); background: var(--white); flex-shrink: 0; overflow-y: auto; }
+  .right-panel-header { padding: 16px 20px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+  .right-panel-title { font-size: 14px; font-weight: 600; }
+  .member-list { padding: 12px 16px; }
+  .member-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .member-role { font-size: 10px; font-weight: 600; color: var(--gold-dark); background: var(--gold-bg); padding: 2px 8px; border-radius: 10px; }
+
+  .section-divider { height: 1px; background: var(--gray-200); margin: 8px 0; }
+  .empty-chat-hint { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; color: var(--gray-400); font-size: 13px; }
+
+  .typing-indicator { display: flex; align-items: center; gap: 4px; padding: 8px 14px; background: var(--gray-100); border-radius: var(--radius-md); width: fit-content; }
+  .typing-dot { width: 6px; height: 6px; background: var(--gray-400); border-radius: 50%; animation: typing 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+
+  .emoji-bar { display: flex; gap: 6px; padding: 6px 8px; background: var(--gray-100); border-radius: var(--radius-sm); flex-wrap: wrap; }
+  .emoji-btn { font-size: 18px; cursor: pointer; padding: 2px; border-radius: 4px; border: none; background: none; }
+  .emoji-btn:hover { background: var(--gray-200); }
+
+  .msg-reactions { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .reaction { display: flex; align-items: center; gap: 4px; background: var(--gray-100); border-radius: 20px; padding: 2px 8px; font-size: 12px; cursor: pointer; border: 1px solid var(--gray-200); }
+  .reaction:hover { border-color: var(--gold); }
+
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+  .status-online { color: var(--success); }
+  .status-away { color: var(--gold); }
+  .status-offline { color: var(--gray-400); }
+</style>
+</head>
+<body>
+
+<!-- Local Protocol Warning Banner -->
+<div id="protocolWarning" style="display:none; background:var(--danger); color:white; padding:12px; text-align:center; font-size:14px; font-weight:600; z-index:9999; position:relative; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  ⚠️ Running via file:// protocol. Local security restrictions block Firestore real-time messaging. Please open <a href="http://localhost:8000/vcatch-chat.html" style="color:white; text-decoration:underline; font-weight:700;">http://localhost:8000/vcatch-chat.html</a> instead.
+</div>
+
+<!-- AUTH: LOGIN -->
+<div id="loginScreen" class="auth-screen">
+  <form class="auth-card" onsubmit="event.preventDefault(); doLogin();">
+    <div class="auth-logo">
+      <img src="VCATCH LOGO copy.png" alt="VCATCH Logo" style="height: 60px; max-width: 100%; object-fit: contain;">
+    </div>
+    <div class="auth-tagline">Internal Communications Platform</div>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" onclick="setLoginMode('empid')">Employee ID</button>
+      <button type="button" class="auth-tab" onclick="setLoginMode('phone')">Phone Number</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="loginLabel">Employee ID</label>
+      <div class="input-group">
+        <i class="ti ti-id-badge input-icon"></i>
+        <input class="form-input" id="loginId" type="text" placeholder="e.g. VC0646">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-group">
+        <i class="ti ti-lock input-icon"></i>
+        <input class="form-input" id="loginPass" type="password" placeholder="Enter password">
+      </div>
+    </div>
+    <button class="btn-primary" type="submit">Sign In <i class="ti ti-arrow-right"></i></button>
+  </form>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="app hidden">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand" style="background: var(--white); padding: 8px 12px; border-radius: var(--radius-md); display: flex; justify-content: center; align-items: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <img src="VCATCH LOGO copy.png" alt="VCATCH Logo" style="height: 28px; max-width: 100%; object-fit: contain;">
+      </div>
+      <div class="user-pill">
+        <div class="user-avatar" id="sidebarAvatar">JD</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">John Doe</div>
+          <div class="user-emp" id="sidebarEmp">EMP001 · ITI FINANCE</div>
+        </div>
+        <div class="online-dot"></div>
+      </div>
+    </div>
+    <div class="sidebar-search">
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input type="text" placeholder="Search chats..." oninput="filterChats(this.value)">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">
+        Direct Messages
+        <button class="sidebar-add" onclick="openModal('newDMModal')" title="New Direct Message">
+          <i class="ti ti-edit"></i>
+        </button>
+      </div>
+    </div>
+    <div id="dmList" class="chat-list" style="max-height: 200px;"></div>
+
+    <div class="sidebar-section" style="margin-top:8px;">
+      <div class="sidebar-section-label">
+        Groups
+        <button class="sidebar-add" onclick="openModal('newGroupModal')" title="New Group">
+          <i class="ti ti-users-plus"></i>
+        </button>
+      </div>
+    </div>
+    <div id="groupList" class="chat-list" style="max-height: 160px;"></div>
+
+    <div class="sidebar-section" style="margin-top:8px;">
+      <div class="sidebar-section-label">
+        Broadcasts
+        <button class="sidebar-add" onclick="openModal('newBroadcastModal')" title="New Broadcast">
+          <i class="ti ti-speakerphone"></i>
+        </button>
+      </div>
+    </div>
+    <div id="broadcastList" class="chat-list" style="max-height: 120px;"></div>
+
+    <div style="flex:1;"></div>
+    <div class="sidebar-footer">
+      <button class="sidebar-icon-btn" title="Profile" onclick="openModal('profileModal')"><i class="ti ti-user-circle"></i></button>
+      <button class="sidebar-icon-btn hidden" id="manageEmployeesBtn" title="Manage Employees" onclick="openModal('manageEmployeesModal');renderEmployeeTable()"><i class="ti ti-users"></i></button>
+      <button class="sidebar-icon-btn" title="Notifications"><i class="ti ti-bell"></i></button>
+      <button class="sidebar-icon-btn" title="Sign Out" onclick="signOut()" style="color:#E24B4A;"><i class="ti ti-logout"></i></button>
+    </div>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div id="chatArea" class="chat-area">
+    <div id="welcomePane" class="welcome-pane">
+      <img src="VCATCH LOGO copy.png" alt="VCATCH Logo" style="height: 100px; max-width: 100%; object-fit: contain; margin-bottom: 8px; opacity: 0.8;">
+      <h2>Welcome to VCATCH</h2>
+      <p>Select a conversation from the sidebar or start a new one.</p>
+    </div>
+    <div id="activeChat" class="hidden" style="display:none;flex-direction:column;height:100%;">
+      <div class="chat-header" id="chatHeader"></div>
+      <div class="messages-area" id="messagesArea"></div>
+      <div id="typingRow" style="padding:0 20px 8px; display:none;">
+        <div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+      </div>
+      <div class="input-bar" id="inputBar">
+        <div class="input-tools">
+          <button class="icon-btn" onclick="triggerFileUpload()" title="Attach file"><i class="ti ti-paperclip"></i></button>
+          <button class="icon-btn" onclick="triggerImageUpload()" title="Send image"><i class="ti ti-photo"></i></button>
+          <button class="icon-btn" onclick="toggleEmoji()" title="Emoji"><i class="ti ti-mood-happy"></i></button>
+        </div>
+        <div id="emojiPicker" class="emoji-bar hidden" style="position:absolute;bottom:70px;left:70px;z-index:50;border:1px solid var(--gray-200);background:white;border-radius:var(--radius-sm);max-width:260px;">
+          😀 😂 😍 👍 👎 🔥 ❤️ 😢 😮 🎉 👋 🙏 💯 😎 🤔 👀 ✅ 🚀 💪 🎯
+          .split(' ').forEach - handled by JS
+        </div>
+        <div id="recordingBar" class="recording-bar hidden">
+          <div class="rec-dot"></div>
+          <span class="rec-time" id="recTime">0:00</span>
+          <span class="rec-cancel" onclick="cancelRecording()">✕ Cancel</span>
+        </div>
+        <div id="msgInput" class="msg-input-wrap" contenteditable="true" data-placeholder="Type a message..." style="display:block;" onkeydown="handleInputKey(event)"></div>
+        <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)">
+        <input type="file" id="imageInput" style="display:none" accept="image/*" onchange="handleImageUpload(event)">
+        <button class="voice-record-btn" id="voiceBtn" onclick="toggleVoiceRecord()" title="Voice message"><i class="ti ti-microphone"></i></button>
+        <button class="send-btn" onclick="sendMessage()" title="Send"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL (group info) -->
+  <div id="rightPanel" class="right-panel hidden"></div>
+
+</div>
+
+<!-- MODALS -->
+<!-- New DM -->
+<div id="newDMModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">New Direct Message <button class="modal-close" onclick="closeModal('newDMModal')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group">
+      <label class="form-label">Search Employee</label>
+      <input class="form-input" id="dmSearch" type="text" placeholder="Name or Employee ID..." oninput="renderUserPicker('dmSearch','dmPicker','dm')">
+    </div>
+    <div id="dmPicker" class="user-picker"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('newDMModal')">Cancel</button>
+      <button class="btn-gold" onclick="createDM()">Open Chat</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Group -->
+<div id="newGroupModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">Create Group <button class="modal-close" onclick="closeModal('newGroupModal')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group">
+      <label class="form-label">Group Name</label>
+      <input class="form-input" id="groupName" type="text" placeholder="e.g. Engineering Team">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Group Icon</label>
+      <select class="form-input" id="groupIcon">
+        <option value="👥">👥 Team</option><option value="💼">💼 Work</option>
+        <option value="🚀">🚀 Project</option><option value="📢">📢 Announcement</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Add Members</label>
+      <input class="form-input" id="groupSearch" type="text" placeholder="Search employees..." oninput="renderUserPicker('groupSearch','groupPicker','group')">
+      <div id="groupPicker" class="user-picker" style="margin-top:8px;"></div>
+    </div>
+    <div id="groupChips" class="member-chips"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('newGroupModal')">Cancel</button>
+      <button class="btn-gold" onclick="createGroup()">Create Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Broadcast -->
+<div id="newBroadcastModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">New Broadcast <button class="modal-close" onclick="closeModal('newBroadcastModal')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group">
+      <label class="form-label">Broadcast Name</label>
+      <input class="form-input" id="broadcastName" type="text" placeholder="e.g. All Staff Announcement">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Select Recipients</label>
+      <input class="form-input" id="broadcastSearch" type="text" placeholder="Search employees..." oninput="renderUserPicker('broadcastSearch','broadcastPicker','broadcast')">
+      <div id="broadcastPicker" class="user-picker" style="margin-top:8px;"></div>
+    </div>
+    <div id="broadcastChips" class="member-chips"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('newBroadcastModal')">Cancel</button>
+      <button class="btn-gold" onclick="createBroadcast()">Create Broadcast</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Group -->
+<div id="editGroupModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">Edit Group <button class="modal-close" onclick="closeModal('editGroupModal')"><i class="ti ti-x"></i></button></div>
+    <div class="form-group">
+      <label class="form-label">Group Name</label>
+      <input class="form-input" id="editGroupName" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Add Members</label>
+      <input class="form-input" id="editGroupSearch" type="text" placeholder="Search..." oninput="renderUserPicker('editGroupSearch','editGroupPicker','editgroup')">
+      <div id="editGroupPicker" class="user-picker" style="margin-top:8px;"></div>
+    </div>
+    <div id="editGroupChips" class="member-chips"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('editGroupModal')">Cancel</button>
+      <button class="btn-gold" onclick="saveEditGroup()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm -->
+<div id="deleteModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">Delete Chat <button class="modal-close" onclick="closeModal('deleteModal')"><i class="ti ti-x"></i></button></div>
+    <p style="font-size:14px;color:var(--gray-600);margin-bottom:8px;">Are you sure you want to delete <strong id="deleteTargetName"></strong>? This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profileModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal-title">My Profile <button class="modal-close" onclick="closeModal('profileModal')"><i class="ti ti-x"></i></button></div>
+    
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px; position: relative;">
+      <!-- Clickable Avatar to Upload -->
+      <div id="profileAvatarContainer" style="position: relative; width: 80px; height: 80px; cursor: pointer;" onclick="triggerAvatarUpload()">
+        <div id="profileAvatar" style="width: 80px; height: 80px; border-radius: 50%; font-size: 26px; font-weight: 700; color: #000; background: var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--gold-light);">MA</div>
+        <div style="position: absolute; bottom: 0; right: 0; background: var(--black); color: var(--white); border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid var(--white);">
+          <i class="ti ti-camera"></i>
+        </div>
+      </div>
+      <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
+      
+      <div style="text-align: center;">
+        <div style="font-size: 14px; font-weight: 600; color: var(--gray-600);" id="profileEmpId">VC0646</div>
+        <div style="font-size: 12px; color: var(--gray-400);" id="profileDept">ITI FINANCE</div>
+      </div>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">First Name</label>
+        <input class="form-input" id="profileFirst" type="text">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Last Name</label>
+        <input class="form-input" id="profileLast" type="text">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Nickname</label>
+      <input class="form-input" id="profileNickname" type="text" placeholder="Enter nickname">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">About / Bio</label>
+      <textarea class="form-input" id="profileAbout" placeholder="Tell us about yourself..." style="resize: vertical; font-family: inherit; font-size: 13px;" rows="2"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-input" id="profileStatus">
+          <option value="online">🟢 Online</option>
+          <option value="away">🟡 Away</option>
+          <option value="busy">🔴 Busy</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input class="form-input" id="profilePhone" type="text" readonly style="background: var(--gray-100); cursor: not-allowed;">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('profileModal')">Cancel</button>
+      <button class="btn-gold" onclick="saveUserProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Employees Modal -->
+<div id="manageEmployeesModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width: 700px; width: 90%;">
+    <div class="modal-title">
+      Manage Employees
+      <button class="modal-close" onclick="closeModal('manageEmployeesModal')"><i class="ti ti-x"></i></button>
+    </div>
+    
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <button class="btn-gold" style="flex: unset; padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px; width: auto;" onclick="openModal('adminCreateModal')">
+        <i class="ti ti-user-plus"></i> Add Single Employee
+      </button>
+      <label class="btn-secondary" style="flex: unset; padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; width: auto;">
+        <i class="ti ti-upload"></i> Bulk Upload (CSV)
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleBulkCSVUpload(event)">
+      </label>
+      <button class="btn-secondary" style="flex: unset; padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px; width: auto;" onclick="downloadCSVTemplate()">
+        <i class="ti ti-download"></i> Download CSV Template
+      </button>
+    </div>
+
+    <!-- Controls for Search, Sort, and Filter -->
+    <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+      <div class="search-box" style="flex: 1; min-width: 150px; position: relative;">
+        <i class="ti ti-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--gray-600);"></i>
+        <input type="text" id="employeeSearchInput" placeholder="Search ID, Name, Phone..." oninput="renderEmployeeTable()" style="width: 100%; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 8px 12px 8px 34px; font-size: 13px; color: var(--black); background: var(--gray-100); outline: none;">
+      </div>
+      
+      <select id="employeeSortSelect" onchange="renderEmployeeTable()" style="border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; background: var(--white); outline: none; color: var(--black);">
+        <option value="empId_asc">Sort by: ID (A-Z)</option>
+        <option value="empId_desc">Sort by: ID (Z-A)</option>
+        <option value="name_asc">Sort by: Name (A-Z)</option>
+        <option value="name_desc">Sort by: Name (Z-A)</option>
+      </select>
+
+      <select id="employeeRoleFilter" onchange="renderEmployeeTable()" style="border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; background: var(--white); outline: none; color: var(--black);">
+        <option value="all">Role: All</option>
+        <option value="Admin">Role: Admin</option>
+        <option value="HR">Role: HR</option>
+        <option value="CEO">Role: CEO</option>
+        <option value="Team Leader">Role: Team Leader</option>
+        <option value="Management">Role: Management</option>
+        <option value="Employee">Role: Employee</option>
+      </select>
+
+      <select id="employeeStatusFilter" onchange="renderEmployeeTable()" style="border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; background: var(--white); outline: none; color: var(--black);">
+        <option value="all">Status: All</option>
+        <option value="active">Status: Active</option>
+        <option value="inactive">Status: Banned</option>
+      </select>
+    </div>
+
+    <div style="overflow-x: auto; border: 1px solid var(--gray-200); border-radius: var(--radius-sm); max-height: 350px; margin-bottom: 16px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 500px;">
+        <thead>
+          <tr style="background: var(--gray-100); border-bottom: 1px solid var(--gray-200); font-weight: 600; color: var(--gray-600);">
+            <th style="padding: 10px 12px;">Employee ID</th>
+            <th style="padding: 10px 12px;">Name</th>
+            <th style="padding: 10px 12px;">Role</th>
+            <th style="padding: 10px 12px;">Department</th>
+            <th style="padding: 10px 12px;">Status</th>
+            <th style="padding: 10px 12px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="employeeTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('manageEmployeesModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Create User -->
+<div id="adminCreateModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">Add New Employee <button class="modal-close" onclick="closeModal('adminCreateModal')"><i class="ti ti-x"></i></button></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="aFirst" placeholder="First"></div>
+      <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="aLast" placeholder="Last"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Employee ID</label><input class="form-input" id="aEmp" placeholder="e.g. VC0XXX"></div>
+    <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="aPhone" placeholder="+91..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label>
+        <select class="form-input" id="aDept">
+          <option>ITI FINANCE</option><option>CRED</option><option>SMARTCOIN</option><option>BHASHSMS</option><option>ACADVIZ</option><option>VISIT HEALTH</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Role</label>
+        <select class="form-input" id="aRole">
+          <option>Employee</option>
+          <option>Admin</option>
+          <option>HR</option>
+          <option>CEO</option>
+          <option>Team Leader</option>
+          <option>Management</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Default Password</label><input class="form-input" id="aPass" type="password" placeholder="Set password"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('adminCreateModal')">Cancel</button>
+      <button class="btn-gold" onclick="adminCreateUser()">Add Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Edit User -->
+<div id="adminEditModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title">Edit Employee <button class="modal-close" onclick="closeModal('adminEditModal')"><i class="ti ti-x"></i></button></div>
+    <input type="hidden" id="editUserId">
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="editFirst" placeholder="First"></div>
+      <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="editLast" placeholder="Last"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Employee ID</label><input class="form-input" id="editEmp" placeholder="e.g. VC0XXX" readonly style="background: var(--gray-100); cursor: not-allowed;"></div>
+    <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="editPhone" placeholder="+91..."></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Department</label>
+        <select class="form-input" id="editDept">
+          <option>ITI FINANCE</option><option>CRED</option><option>SMARTCOIN</option><option>BHASHSMS</option><option>ACADVIZ</option><option>VISIT HEALTH</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Role</label>
+        <select class="form-input" id="editRole">
+          <option>Employee</option>
+          <option>Admin</option>
+          <option>HR</option>
+          <option>CEO</option>
+          <option>Team Leader</option>
+          <option>Management</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password (Leave blank to keep current)</label>
+      <input class="form-input" id="editPass" type="password" placeholder="Enter new password">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('adminEditModal')">Cancel</button>
+      <button class="btn-gold" onclick="adminSaveEmployee()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Message Modal -->
+<div id="editMsgModal" class="modal-backdrop hidden">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">Edit Message <button class="modal-close" onclick="closeModal('editMsgModal')"><i class="ti ti-x"></i></button></div>
+    <textarea class="form-input" id="editMsgText" rows="3" style="resize:vertical;"></textarea>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('editMsgModal')">Cancel</button>
+      <button class="btn-gold" onclick="saveEditMsg()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAgvP7u0IrJwKZTE7WGnDmwTGmRg5W2BI4",
+  authDomain: "vcatch-chat.firebaseapp.com",
+  projectId: "vcatch-chat",
+  storageBucket: "vcatch-chat.firebasestorage.app",
+  messagingSenderId: "828865555850",
+  appId: "1:828865555850:web:5cb816e433fe4ad3d6ac73",
+  measurementId: "G-2NSKSJ3FRM"
+};
+
+// Initialize Firebase using Namespaced API
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
+
+// Error logging to Firestore
+window.onerror = function(message, source, lineno, colno, error) {
+  try {
+    db.collection("debug_logs").add({
+      message: message || '',
+      source: source || '',
+      lineno: lineno || 0,
+      colno: colno || 0,
+      error: error ? error.stack || error.message : '',
+      userId: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id || currentUser.empId || 'unknown' : 'anonymous',
+      ts: Date.now()
+    });
+  } catch(e) { console.error("Error logger failed:", e); }
+  return false;
+};
+window.addEventListener('unhandledrejection', function(event) {
+  try {
+    db.collection("debug_logs").add({
+      message: 'Unhandled Promise Rejection: ' + (event.reason ? event.reason.message || event.reason : ''),
+      error: event.reason && event.reason.stack ? event.reason.stack : '',
+      userId: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.id || currentUser.empId || 'unknown' : 'anonymous',
+      ts: Date.now()
+    });
+  } catch(e) { console.error("Error logger failed:", e); }
+});
+
+// Enable offline persistence only if NOT running under file:// protocol (which restricts IndexedDB)
+if (window.location.protocol !== 'file:') {
+  db.enablePersistence().catch((err) => {
+    console.warn("Firestore offline persistence not enabled:", err.code);
+  });
+} else {
+  console.log("Offline persistence skipped (running under file:// protocol)");
+}
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let users = [];
+let chats = [];
+let currentUser = null;
+let activeChat = null;
+let selectedDMUser = null;
+let selectedGroupMembers = [];
+let selectedBroadcastMembers = [];
+let selectedEditGroupMembers = [];
+let isRecording = false;
+let recInterval = null;
+let recSeconds = 0;
+let deleteTarget = null;
+let editMsgTarget = null;
+let loginMode = 'empid';
+let pickerSelections = {};
+
+let mediaRecorder = null;
+let audioChunks = [];
+
+// Listeners unsubscribe functions
+let usersUnsub = null;
+let chatsUnsub = null;
+let messagesUnsub = null;
+
+// Dynamic Avatar rendering helper
+function getUserAvatarHtml(u, size='32px', fontSize='12px') {
+  if (u && u.avatarUrl) {
+    return `<img src="${u.avatarUrl}" style="width:${size};height:${size};border-radius:50%;object-fit:cover;display:block;flex-shrink:0;" alt="${u ? u.initials || '?' : '?'}">`;
+  } else {
+    const initials = u ? u.initials || '?' : '?';
+    const color = u ? u.color || '#888' : '#888';
+    return `<div class="user-avatar" style="width:${size};height:${size};border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:${fontSize};font-weight:700;color:#000;flex-shrink:0;">${initials}</div>`;
+  }
+}
+
+// Verification badge rendering helper
+function getNameWithBadgeHtml(u, nameString, iconSize='14px') {
+  if (u && u.verified) {
+    return `${nameString} <i class="ti ti-discount-check-filled" style="color: #1d9bf0; font-size: ${iconSize}; vertical-align: middle; display: inline-flex; align-items: center;" title="Verified Employee"></i>`;
+  }
+  return nameString;
+}
+
+// Secondary app helper to update another user's password client-side
+async function updateFirebaseUserPasswordWithoutSignout(email, oldPassword, newPassword) {
+  const secondaryAppName = `Secondary_Pass_${Date.now()}`;
+  const secondaryApp = firebase.initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = secondaryApp.auth();
+  try {
+    const cred = await secondaryAuth.signInWithEmailAndPassword(email, oldPassword);
+    await cred.user.updatePassword(newPassword);
+    await secondaryAuth.signOut();
+    await secondaryApp.delete();
+  } catch (error) {
+    await secondaryApp.delete();
+    throw error;
+  }
+}
+
+// Secondary app helper to create users client-side without logging out the admin
+async function createFirebaseUserWithoutSignout(email, password) {
+  const secondaryAppName = `Secondary_${Date.now()}`;
+  const secondaryApp = firebase.initializeApp(firebaseConfig, secondaryAppName);
+  const secondaryAuth = secondaryApp.auth();
+  try {
+    const userCredential = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+    const uid = userCredential.user.uid;
+    await secondaryAuth.signOut();
+    await secondaryApp.delete();
+    return uid;
+  } catch (error) {
+    await secondaryApp.delete();
+    throw error;
+  }
+}
+
+// Auto-register Master Admin on setup if it doesn't exist yet
+async function ensureMasterAdminExists() {
+  const masterEmail = "vc0646@vcatch.internal";
+  const masterPass = "Admin@2026";
+  const tempAppName = "TempInitApp_" + Date.now();
+  const tempApp = firebase.initializeApp(firebaseConfig, tempAppName);
+  const tempAuth = tempApp.auth();
+  try {
+    const cred = await tempAuth.signInWithEmailAndPassword(masterEmail, masterPass);
+    const uid = cred.user.uid;
+    // Verify Firestore document exists, if not write it
+    try {
+      const docSnap = await db.collection("users").doc(uid).get();
+      if (!docSnap.exists) {
+        await db.collection("users").doc(uid).set({
+          empId: "VC0646",
+          firstName: "Master",
+          lastName: "Admin",
+          phone: "+91 9876541006",
+          dept: "ITI FINANCE",
+          pass: "Admin@2026",
+          initials: "MA",
+          color: "#E8A020",
+          status: "online",
+          role: "Admin",
+          active: true
+        });
+        console.log("Master Admin user document recreated in Firestore.");
+      }
+    } catch (dbErr) {
+      console.error("Firestore database error checking master admin:", dbErr);
+      if (dbErr.message && dbErr.message.toLowerCase().includes("permission-denied")) {
+        showToast("Firestore access denied. Please update your Firestore Security Rules in Firebase Console.", "danger");
+      }
+    }
+    await tempAuth.signOut();
+    await tempApp.delete();
+  } catch (err) {
+    if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential" || err.code === "auth/invalid-email" || err.code === "auth/cannot-create-user-without-auth") {
+      try {
+        const cred = await tempAuth.createUserWithEmailAndPassword(masterEmail, masterPass);
+        const uid = cred.user.uid;
+        await db.collection("users").doc(uid).set({
+          empId: "VC0646",
+          firstName: "Master",
+          lastName: "Admin",
+          phone: "+91 9876541006",
+          dept: "ITI FINANCE",
+          pass: "Admin@2026",
+          initials: "MA",
+          color: "#E8A020",
+          status: "online",
+          role: "Admin",
+          active: true
+        });
+        console.log("Master Admin user initialized successfully.");
+      } catch (createErr) {
+        console.error("Failed to initialize Master Admin user:", createErr);
+        if (createErr.code === 'auth/operation-not-allowed') {
+          showToast('Please enable the "Email/Password" provider in your Firebase Authentication Console settings.', 'danger');
+        } else {
+          showToast('Initialization failed: ' + createErr.message, 'danger');
+        }
+      }
+    } else {
+      console.error("Auth initialization check error:", err);
+      if (err.code === 'auth/operation-not-allowed') {
+        showToast('Please enable the "Email/Password" provider in your Firebase Authentication Console settings.', 'danger');
+      } else {
+        showToast("Initialization error: " + err.message, "danger");
+      }
+    }
+    await tempApp.delete();
+  }
+}
+
+// Check session on start
+auth.onAuthStateChanged(async (authUser) => {
+  if (authUser) {
+    try {
+      const docSnap = await db.collection("users").doc(authUser.uid).get();
+      if (docSnap.exists) {
+        const userObj = { id: docSnap.id, ...docSnap.data() };
+        if (userObj.active === false) {
+          showToast("Your account has been deactivated. Please contact administration.", "danger");
+          await auth.signOut();
+          signOut();
+          return;
+        }
+        loginAs(userObj);
+      } else {
+        // Master Admin Backup: Write missing Firestore document if Auth succeeded
+        if (authUser.email === "vc0646@vcatch.internal") {
+          const newDoc = {
+            empId: "VC0646",
+            firstName: "Master",
+            lastName: "Admin",
+            phone: "+91 9876541006",
+            dept: "ITI FINANCE",
+            pass: "Admin@2026",
+            initials: "MA",
+            color: "#E8A020",
+            status: "online",
+            role: "Admin",
+            active: true
+          };
+          await db.collection("users").doc(authUser.uid).set(newDoc);
+          console.log("Master Admin user document recreated in Firestore during login fallback.");
+          loginAs({ id: authUser.uid, ...newDoc });
+        } else {
+          showToast("User record not found in Firestore database.", "danger");
+          await auth.signOut();
+          signOut();
+        }
+      }
+    } catch (e) {
+      console.error("Firestore read error:", e);
+      if (e.message && e.message.toLowerCase().includes("permission-denied")) {
+        showToast("Firestore access denied. Please verify your Firestore Security Rules in Firebase Console.", "danger");
+      } else {
+        showToast("Session check failed: " + e.message, "danger");
+      }
+      await auth.signOut();
+      signOut();
+    }
+  } else {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinChatId = urlParams.get('join');
+    if (joinChatId) {
+      sessionStorage.setItem('pendingJoinChatId', joinChatId);
+    }
+    signOut();
+  }
+});
+
+// Run Master Admin check silently (disabled by default; run python create_admin.py to initialize Master Admin if needed)
+// ensureMasterAdminExists();
+
+// ─── AUTH ──────────────────────────────────────────────────────────────────
+function setLoginMode(mode) {
+  loginMode = mode;
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (mode==='empid'&&i===0)||(mode==='phone'&&i===1)));
+  document.getElementById('loginLabel').textContent = mode === 'empid' ? 'Employee ID' : 'Phone Number';
+  document.getElementById('loginId').placeholder = mode === 'empid' ? 'e.g. VC0646' : '+91 9876543210';
+  const icon = document.querySelector('#loginScreen .input-icon');
+  if(icon) icon.className = `ti ti-${mode==='empid'?'id-badge':'phone'} input-icon`;
+}
+
+async function doLogin() {
+  const id = document.getElementById('loginId').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!id || !pass) { showToast('Please fill all login fields', 'danger'); return; }
+
+  showToast('Signing in...');
+  let email = "";
+  if(loginMode === 'empid') {
+    email = `${id.toLowerCase()}@vcatch.internal`;
+  } else {
+    try {
+      const snap = await db.collection("users").where("phone", "==", id).get();
+      if (!snap.empty) {
+        const u = snap.docs[0].data();
+        email = `${u.empId.toLowerCase()}@vcatch.internal`;
+      } else {
+        showToast('Phone number not found', 'danger');
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Error searching phone number: ' + e.message, 'danger');
+      return;
+    }
+  }
+
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (err) {
+    console.error("Sign in failed:", err);
+    if (err.code === 'auth/operation-not-allowed') {
+      showToast('Login method disabled. Enable "Email/Password" in Firebase Authentication settings.', 'danger');
+    } else if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      showToast('Invalid credentials. Check ID and password.', 'danger');
+    } else {
+      showToast('Login failed: ' + err.message, 'danger');
+    }
+  }
+}
+
+function loginAs(user) {
+  currentUser = user;
+  showToast(`Welcome back, ${user.firstName}!`, 'success');
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('sidebarName').innerHTML = getNameWithBadgeHtml(user, `${user.firstName} ${user.lastName}`);
+  document.getElementById('sidebarEmp').textContent = `${user.empId} · ${user.dept}`;
+  
+  const sidebarAvatar = document.getElementById('sidebarAvatar');
+  if (user.avatarUrl) {
+    sidebarAvatar.innerHTML = `<img src="${user.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+    sidebarAvatar.style.background = 'none';
+  } else {
+    sidebarAvatar.textContent = user.initials;
+    sidebarAvatar.style.background = user.color;
+  }
+  
+  // Hide/Show Manage button based on role
+  const manageBtn = document.getElementById('manageEmployeesBtn');
+  if(manageBtn) {
+    const allowedRoles = ['Admin', 'HR', 'CEO', 'Team Leader', 'Management'];
+    if(user.role && allowedRoles.includes(user.role)) {
+      manageBtn.classList.remove('hidden');
+    } else {
+      manageBtn.classList.add('hidden');
+    }
+  }
+
+  // Handle pending invite links after login
+  const urlParams = new URLSearchParams(window.location.search);
+  const joinChatId = urlParams.get('join') || sessionStorage.getItem('pendingJoinChatId');
+  if (joinChatId) {
+    sessionStorage.removeItem('pendingJoinChatId');
+    try {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (e) {
+      console.warn("Could not clear URL parameters due to security restrictions:", e);
+    }
+    setTimeout(() => { executeJoinGroup(joinChatId); }, 800);
+  }
+
+  startRealTimeListeners();
+}
+
+function signOut() {
+  if (auth.currentUser) {
+    auth.signOut();
+  }
+  stopRealTimeListeners();
+  
+  // Clear local state variables
+  currentUser = null;
+  activeChat = null;
+  users = [];
+  chats = [];
+  selectedDMUser = null;
+  selectedGroupMembers = [];
+  selectedBroadcastMembers = [];
+  selectedEditGroupMembers = [];
+  pickerSelections = {};
+  deleteTarget = null;
+  editMsgTarget = null;
+
+  // Clear and reset UI elements
+  const dmListEl = document.getElementById('dmList');
+  if (dmListEl) dmListEl.innerHTML = '';
+  const groupListEl = document.getElementById('groupList');
+  if (groupListEl) groupListEl.innerHTML = '';
+  const broadcastListEl = document.getElementById('broadcastList');
+  if (broadcastListEl) broadcastListEl.innerHTML = '';
+  
+  const messagesAreaEl = document.getElementById('messagesArea');
+  if (messagesAreaEl) messagesAreaEl.innerHTML = '';
+  const chatHeaderEl = document.getElementById('chatHeader');
+  if (chatHeaderEl) chatHeaderEl.innerHTML = '';
+  
+  const msgInputEl = document.getElementById('msgInput');
+  if (msgInputEl) msgInputEl.innerHTML = '';
+  
+  const typingRowEl = document.getElementById('typingRow');
+  if (typingRowEl) typingRowEl.style.display = 'none';
+
+  const rightPanelEl = document.getElementById('rightPanel');
+  if (rightPanelEl) {
+    rightPanelEl.classList.add('hidden');
+    rightPanelEl.innerHTML = '';
+  }
+
+  const activeChatEl = document.getElementById('activeChat');
+  if (activeChatEl) {
+    activeChatEl.classList.add('hidden');
+    activeChatEl.style.display = 'none';
+  }
+
+  const welcomePaneEl = document.getElementById('welcomePane');
+  if (welcomePaneEl) {
+    welcomePaneEl.classList.remove('hidden');
+  }
+
+  const employeeTableBody = document.getElementById('employeeTableBody');
+  if (employeeTableBody) employeeTableBody.innerHTML = '';
+
+  // Reset profile modal fields
+  const profileEmpId = document.getElementById('profileEmpId');
+  if (profileEmpId) profileEmpId.textContent = '';
+  const profileDept = document.getElementById('profileDept');
+  if (profileDept) profileDept.textContent = '';
+  const profileFirst = document.getElementById('profileFirst');
+  if (profileFirst) profileFirst.value = '';
+  const profileLast = document.getElementById('profileLast');
+  if (profileLast) profileLast.value = '';
+  const profileNickname = document.getElementById('profileNickname');
+  if (profileNickname) profileNickname.value = '';
+  const profileAbout = document.getElementById('profileAbout');
+  if (profileAbout) profileAbout.value = '';
+  const profilePhone = document.getElementById('profilePhone');
+  if (profilePhone) profilePhone.value = '';
+  const profileAvatar = document.getElementById('profileAvatar');
+  if (profileAvatar) {
+    profileAvatar.textContent = '';
+    profileAvatar.style.background = 'var(--gold)';
+  }
+
+  // Close all open modals
+  document.querySelectorAll('.modal-backdrop').forEach(modal => {
+    modal.classList.add('hidden');
+  });
+
+  // Toggle screens
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ─── FIRESTORE LISTENERS ───────────────────────────────────────────────────
+function startRealTimeListeners() {
+  stopRealTimeListeners();
+
+  // 1. Users collection listener
+  usersUnsub = db.collection("users").onSnapshot((snapshot) => {
+    users = [];
+    snapshot.forEach((docSnap) => {
+      users.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    
+    renderSidebar();
+    renderEmployeeTable();
+    
+    if (activeChat) {
+      const updatedChat = chats.find(c => c.id === activeChat.id);
+      if (updatedChat) {
+        activeChat = updatedChat;
+        renderChatHeader(activeChat);
+        if (activeChat.type === 'group' || activeChat.type === 'broadcast') {
+          renderRightPanel(activeChat);
+        }
+      }
+    }
+  }, (err) => {
+    console.error("Users listener error:", err);
+    showToast("Users listener error: " + err.message, "danger");
+  });
+
+  // 2. Chats collection listener
+  let chatsQuery = db.collection("chats");
+  if (currentUser.role !== 'Admin') {
+    chatsQuery = chatsQuery.where("members", "array-contains", currentUser.id);
+  }
+  chatsUnsub = chatsQuery.onSnapshot((snapshot) => {
+    chats = [];
+    snapshot.forEach((docSnap) => {
+      chats.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    
+    // Sort chats by updatedAt (most recent first)
+    chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    
+    renderSidebar();
+    
+    if (activeChat) {
+      const updatedChat = chats.find(c => c.id === activeChat.id);
+      if (updatedChat) {
+        activeChat = updatedChat;
+        renderChatHeader(activeChat);
+        if (activeChat.type === 'group' || activeChat.type === 'broadcast') {
+          renderRightPanel(activeChat);
+        }
+      }
+    }
+  }, (err) => {
+    console.error("Chats listener error:", err);
+    showToast("Chats listener error: " + err.message, "danger");
+  });
+}
+
+function stopRealTimeListeners() {
+  if (usersUnsub) { usersUnsub(); usersUnsub = null; }
+  if (chatsUnsub) { chatsUnsub(); chatsUnsub = null; }
+  if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+}
+
+function startMessagesListener(chatId) {
+  if (messagesUnsub) { messagesUnsub(); messagesUnsub = null; }
+  
+  messagesUnsub = db.collection("chats").doc(chatId).collection("messages").orderBy("ts", "asc").onSnapshot((snapshot) => {
+    if (!activeChat || activeChat.id !== chatId) return;
+    
+    activeChat.messages = [];
+    snapshot.forEach((docSnap) => {
+      activeChat.messages.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    
+    renderMessages();
+    
+    // Scroll to bottom
+    const area = document.getElementById('messagesArea');
+    if (area) area.scrollTop = area.scrollHeight;
+  }, (err) => {
+    console.error("Messages listener error:", err);
+    showToast("Messages listener error: " + err.message, "danger");
+  });
+}
+
+// ─── SIDEBAR ───────────────────────────────────────────────────────────────
+function renderSidebar() {
+  renderChatList('dm');
+  renderChatList('group');
+  renderChatList('broadcast');
+}
+
+function renderChatList(type) {
+  const listId = type === 'dm' ? 'dmList' : type === 'group' ? 'groupList' : 'broadcastList';
+  const el = document.getElementById(listId);
+  if (!el) return;
+
+  // Filter DMs client-side for Admin to keep their sidebar private
+  let myChats = chats.filter(c => c.type === type);
+  if (type === 'dm') {
+    myChats = myChats.filter(c => c.members.includes(currentUser.id));
+  }
+  
+  el.innerHTML = myChats.length === 0 ? `<div style="padding:10px 16px;font-size:12px;color:var(--gray-400)">No ${type === 'dm' ? 'direct messages' : type+'s'} yet</div>` : '';
+  
+  myChats.forEach(chat => {
+    const item = document.createElement('div');
+    item.className = 'chat-item' + (activeChat && activeChat.id === chat.id ? ' active' : '');
+    item.onclick = () => openChat(chat);
+    
+    const last = chat.lastMessage;
+    let name = '', initials = '', color = '#888', avatarClass = '', avatarHtml = '';
+    
+    if(chat.type==='dm') {
+      const otherId = chat.members.find(m => m !== currentUser.id);
+      const other = users.find(u => u.id === otherId);
+      if(other) { 
+        const rawName = other.nickname ? `${other.firstName} ${other.lastName} (${other.nickname})` : `${other.firstName} ${other.lastName}`; 
+        name = getNameWithBadgeHtml(other, rawName);
+        avatarHtml = getUserAvatarHtml(other, '38px', '13px');
+      } else {
+        name = "Unknown User";
+        avatarHtml = getUserAvatarHtml(null, '38px', '13px');
+      }
+    } else { 
+      name = chat.name; 
+      initials = chat.icon || (chat.type==='broadcast'?'📢':'👥'); 
+      avatarClass = chat.type === 'broadcast' ? 'broadcast' : 'group'; 
+      avatarHtml = `<div class="chat-avatar ${avatarClass}">${initials}</div>`;
+    }
+    
+    const preview = last ? (last.type==='voice'?'🎤 Voice message':last.type==='image'?'📷 Photo':last.type==='file'?`📎 File: ${last.text}`:last.text) : 'No messages yet';
+    const timeStr = last ? formatTime(last.ts) : '';
+    
+    item.innerHTML = `
+      ${avatarHtml}
+      <div class="chat-meta">
+        <div class="chat-name">${name}</div>
+        <div class="chat-preview">${preview}</div>
+      </div>
+      <div class="chat-right">
+        <div class="chat-time">${timeStr}</div>
+      </div>`;
+    el.appendChild(item);
+  });
+}
+
+function filterChats(q) {
+  const queryText = q.trim().toLowerCase();
+  renderFilteredSidebar(queryText);
+}
+
+function renderFilteredSidebar(queryText) {
+  if (!queryText) { renderSidebar(); return; }
+  
+  ['dm', 'group', 'broadcast'].forEach(type => {
+    const listId = type === 'dm' ? 'dmList' : type === 'group' ? 'groupList' : 'broadcastList';
+    const el = document.getElementById(listId);
+    if (!el) return;
+    
+    let myChats = chats.filter(c => {
+      if (c.type !== type) return false;
+      if (type === 'dm') {
+        if (!c.members.includes(currentUser.id)) return false;
+        const otherId = c.members.find(m => m !== currentUser.id);
+        const other = users.find(u => u.id === otherId);
+        return other && `${other.firstName} ${other.lastName}`.toLowerCase().includes(queryText);
+      }
+      return c.name.toLowerCase().includes(queryText);
+    });
+    
+    el.innerHTML = myChats.length === 0 ? `<div style="padding:10px 16px;font-size:12px;color:var(--gray-400)">No matches</div>` : '';
+    
+    myChats.forEach(chat => {
+      const item = document.createElement('div');
+      item.className = 'chat-item' + (activeChat && activeChat.id === chat.id ? ' active' : '');
+      item.onclick = () => openChat(chat);
+      const last = chat.lastMessage;
+      
+      let name = '', initials = '', color = '#888', avatarClass = '', avatarHtml = '';
+      if(chat.type==='dm') {
+        const otherId = chat.members.find(m => m !== currentUser.id);
+        const other = users.find(u => u.id === otherId);
+        if(other) { 
+          const rawName = other.nickname ? `${other.firstName} ${other.lastName} (${other.nickname})` : `${other.firstName} ${other.lastName}`; 
+          name = getNameWithBadgeHtml(other, rawName);
+          avatarHtml = getUserAvatarHtml(other, '38px', '13px');
+        } else { 
+          name = "Unknown User"; 
+          avatarHtml = getUserAvatarHtml(null, '38px', '13px');
+        }
+      } else { 
+        name = chat.name; 
+        initials = chat.icon || (chat.type==='broadcast'?'📢':'👥'); 
+        avatarClass = chat.type === 'broadcast' ? 'broadcast' : 'group'; 
+        avatarHtml = `<div class="chat-avatar ${avatarClass}">${initials}</div>`;
+      }
+      
+      const preview = last ? (last.type==='voice'?'🎤 Voice message':last.type==='image'?'📷 Photo':last.text) : 'No messages yet';
+      const timeStr = last ? formatTime(last.ts) : '';
+      
+      item.innerHTML = `
+        ${avatarHtml}
+        <div class="chat-meta">
+          <div class="chat-name">${name}</div>
+          <div class="chat-preview">${preview}</div>
+        </div>
+        <div class="chat-right">
+          <div class="chat-time">${timeStr}</div>
+        </div>`;
+      el.appendChild(item);
+    });
+  });
+}
+
+// ─── CHAT OPEN ─────────────────────────────────────────────────────────────
+async function openChat(chat) {
+  if ((chat.type === 'group' || chat.type === 'broadcast') && !chat.members.includes(currentUser.id)) {
+    showToast("Entering group as Master Admin...");
+    try {
+      await db.collection("chats").doc(chat.id).update({
+        members: firebase.firestore.FieldValue.arrayUnion(currentUser.id)
+      });
+      chat.members.push(currentUser.id);
+    } catch (err) {
+      console.error("Failed to join group:", err);
+      showToast("Join failed: " + err.message, "danger");
+      return;
+    }
+  }
+
+  activeChat = chat;
+  document.getElementById('welcomePane').classList.add('hidden');
+  const ac = document.getElementById('activeChat');
+  ac.classList.remove('hidden');
+  ac.style.display = 'flex';
+  
+  renderChatHeader(chat);
+  startMessagesListener(chat.id);
+  renderSidebar();
+  
+  const rp = document.getElementById('rightPanel');
+  if(chat.type === 'group' || chat.type === 'broadcast') {
+    rp.classList.remove('hidden');
+    renderRightPanel(chat);
+  } else {
+    rp.classList.add('hidden');
+  }
+}
+
+// Global join executor for invite links
+async function executeJoinGroup(chatId) {
+  showToast("Joining group...");
+  try {
+    const docRef = db.collection("chats").doc(chatId);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      showToast("Group not found", "danger");
+      return;
+    }
+    const chatData = { id: docSnap.id, ...docSnap.data() };
+    if (chatData.type !== 'group' && chatData.type !== 'broadcast') {
+      showToast("Invalid invite link", "danger");
+      return;
+    }
+    
+    if (!chatData.members.includes(currentUser.id)) {
+      await docRef.update({
+        members: firebase.firestore.FieldValue.arrayUnion(currentUser.id)
+      });
+      chatData.members.push(currentUser.id);
+      showToast("Joined successfully!", "success");
+    }
+    openChat(chatData);
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to join: " + err.message, "danger");
+  }
+}
+
+// Copy Group Invite Link helper pointing to vcatch.in
+window.copyGroupInviteLink = function(chatId) {
+  const filename = window.location.pathname.endsWith('.html') ? window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1) : '';
+  const inviteUrl = "https://vcatch.in/" + (filename || "vcatch-chat.html") + "?join=" + chatId;
+  navigator.clipboard.writeText(inviteUrl).then(() => {
+    showToast("Invite link copied!", "success");
+  }).catch(err => {
+    console.error("Copy failed:", err);
+    showToast("Invite: " + inviteUrl, "info");
+  });
+};
+
+function renderChatHeader(chat) {
+  const hdr = document.getElementById('chatHeader');
+  if (!hdr) return;
+
+  let name='', statusText='', avatarHtml='', avatarClass='';
+  if(chat.type==='dm') {
+    const otherId = chat.members.find(m => m !== currentUser.id);
+    const other = users.find(u => u.id === otherId);
+    if(other) { 
+      const rawName = other.nickname ? `${other.firstName} ${other.lastName} (${other.nickname})` : `${other.firstName} ${other.lastName}`; 
+      name = getNameWithBadgeHtml(other, rawName, '16px');
+      avatarHtml = getUserAvatarHtml(other, '38px', '13px');
+      statusText = `${other.empId} · ${other.status==='online'?'<span class="status-badge status-online">● Online</span>':other.status==='away'?'<span class="status-badge status-away">● Away</span>':'<span class="status-badge status-offline">● Offline</span>'}`; 
+    } else {
+      name = "Unknown User";
+      avatarHtml = getUserAvatarHtml(null, '38px', '13px');
+      statusText = "Offline";
+    }
+  } else {
+    name = chat.name; 
+    const initials = chat.icon || (chat.type==='broadcast'?'📢':'👥'); 
+    avatarClass = chat.type==='broadcast'?'broadcast':'group';
+    avatarHtml = `<div class="chat-header-avatar ${avatarClass}">${initials}</div>`;
+    statusText = `${chat.type==='group'?chat.members.length+' members':'Broadcast to '+chat.members.length+' recipients'}`;
+  }
+  
+  const showEdit = chat.type==='group' && (chat.admin===currentUser.id || currentUser.role==='Admin');
+  const showDelete = chat.type!=='dm' && (chat.admin===currentUser.id || currentUser.role==='Admin');
+  const showDMDelete = chat.type==='dm';
+  const showInvite = chat.type==='group';
+  
+  hdr.innerHTML = `
+    ${avatarHtml}
+    <div class="chat-header-info">
+      <div class="chat-header-name">${name}</div>
+      <div class="chat-header-status">${statusText}</div>
+    </div>
+    <div class="chat-header-actions">
+      ${showInvite ? `<button class="icon-btn" onclick="copyGroupInviteLink('${chat.id}')" title="Copy Invite Link"><i class="ti ti-link"></i></button>` : ''}
+      ${showEdit ? `<button class="icon-btn" onclick="openModal('editGroupModal');initEditGroup()" title="Edit group"><i class="ti ti-settings"></i></button>` : ''}
+      ${showDelete ? `<button class="icon-btn" onclick="openDeleteModal()" title="Delete"><i class="ti ti-trash"></i></button>` : ''}
+      ${showDMDelete ? `<button class="icon-btn" onclick="openDeleteModal()" title="Delete"><i class="ti ti-trash"></i></button>` : ''}
+    </div>`;
+}
+
+// ─── MESSAGES ──────────────────────────────────────────────────────────────
+function renderMessages() {
+  const area = document.getElementById('messagesArea');
+  if (!area) return;
+  area.innerHTML = '';
+  if(!activeChat || !activeChat.messages || activeChat.messages.length===0) {
+    area.innerHTML = `<div class="empty-chat-hint"><i class="ti ti-message" style="font-size:40px;opacity:0.2;"></i><span>No messages yet. Say hello!</span></div>`;
+    return;
+  }
+  activeChat.messages.forEach(msg => {
+    area.appendChild(buildMsgEl(msg));
+  });
+  area.scrollTop = area.scrollHeight;
+}
+
+function buildMsgEl(msg) {
+  const isMine = msg.from === currentUser.id;
+  const sender = users.find(u => u.id === msg.from);
+  const wrap = document.createElement('div');
+  wrap.className = `msg-wrap ${isMine?'mine':''}`;
+  wrap.dataset.msgId = msg.id;
+
+  let contentHtml = '';
+  if(msg.deleted) {
+    contentHtml = `<div class="msg-content"><span class="msg-deleted"><i class="ti ti-ban" style="font-size:13px;"></i> This message was deleted</span></div>`;
+  } else if(msg.type==='voice') {
+    const bars = Array.from({length:20}, (_,i) => `<div class="voice-bar" style="height:${6+Math.sin(i*0.6)*10}px"></div>`).join('');
+    contentHtml = `<div class="msg-content">
+      <div class="msg-voice" style="cursor:pointer;" onclick="playAudioMsg('${msg.text}', this)">
+        <button class="voice-play"><i class="ti ti-player-play" style="font-size:13px;"></i></button>
+        <div class="voice-wave">${bars}</div>
+        <span class="voice-dur">${msg.duration||'0:00'}</span>
+      </div>
+    </div>`;
+  } else if(msg.type==='image') {
+    contentHtml = `<div class="msg-content" style="padding:4px;">
+      <img src="${msg.text}" alt="${msg.fileName||'Photo'}" style="max-width:220px; max-height:220px; border-radius: var(--radius-sm); display:block; cursor:pointer;" onclick="window.open('${msg.text}', '_blank')">
+    </div>`;
+  } else if(msg.type==='file') {
+    contentHtml = `<div class="msg-content" style="cursor:pointer;" onclick="window.open('${msg.text}', '_blank')">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="ti ti-file" style="font-size:22px;"></i>
+        <div>
+          <div style="font-size:13px;font-weight:500;text-decoration:underline;word-break:break-all;">${msg.fileName}</div>
+          <div style="font-size:11px;opacity:0.7;">${msg.fileSize||'File'}</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    contentHtml = `<div class="msg-content">${escHtml(msg.text)}${msg.edited?'<span class="msg-edited"> (edited)</span>':''}</div>`;
+  }
+
+  const reactionsHtml = msg.reactions && msg.reactions.length ? `<div class="msg-reactions">${msg.reactions.map(r=>`<div class="reaction" onclick="reactMsg('${msg.id}', '${r.emoji}')">${r.emoji} <span>${r.count}</span></div>`).join('')}</div>` : '';
+
+  // Sender name display with optional Nickname and verification tick
+  let rawSenderName = sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown';
+  if (sender && sender.nickname) {
+    rawSenderName += ` (${sender.nickname})`;
+  }
+  const senderNameHtml = sender ? getNameWithBadgeHtml(sender, rawSenderName, '13px') : 'Unknown';
+
+  // Sender and receiver avatar rendering
+  let senderAvatarHtml = '';
+  if (!isMine) {
+    if (sender && sender.avatarUrl) {
+      senderAvatarHtml = `<img src="${sender.avatarUrl}" class="msg-avatar-sm" style="width:28px;height:28px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;">`;
+    } else {
+      senderAvatarHtml = `<div class="msg-avatar-sm" style="background:${sender ? sender.color : '#888'}">${sender ? sender.initials : '?'}</div>`;
+    }
+  }
+
+  let myAvatarHtml = '';
+  if (isMine) {
+    if (currentUser.avatarUrl) {
+      myAvatarHtml = `<img src="${currentUser.avatarUrl}" class="msg-avatar-sm" style="width:28px;height:28px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;">`;
+    } else {
+      myAvatarHtml = `<div class="msg-avatar-sm" style="background:${currentUser.color}">${currentUser.initials}</div>`;
+    }
+  }
+
+  wrap.innerHTML = `
+    ${!isMine ? senderAvatarHtml : ''}
+    <div class="msg-bubble">
+      ${!isMine && activeChat.type !== 'dm' ? `<div class="msg-sender-name">${senderNameHtml}</div>` : ''}
+      <div oncontextmenu="showCtxMenu(event,'${msg.id}')" ondblclick="showCtxMenu(event,'${msg.id}')">
+        ${contentHtml}
+      </div>
+      ${reactionsHtml}
+      <div class="msg-time">
+        ${formatTimeFull(msg.ts)}
+        ${isMine ? `<i class="ti ti-checks msg-tick"></i>` : ''}
+      </div>
+    </div>
+    ${isMine ? myAvatarHtml : ''}
+  `;
+  return wrap;
+}
+
+window.playAudioMsg = function(url, el) {
+  const btn = el.querySelector('.voice-play i');
+  let audio = el.audioElement;
+  if (!audio) {
+    audio = new Audio(url);
+    el.audioElement = audio;
+    audio.onended = () => { if(btn) btn.className = 'ti ti-player-play'; };
+    audio.onplay = () => { if(btn) btn.className = 'ti ti-player-pause'; };
+    audio.onpause = () => { if(btn) btn.className = 'ti ti-player-play'; };
+  }
+  if (audio.paused) {
+    audio.play().catch(err => console.error("Audio play error:", err));
+  } else {
+    audio.pause();
+  }
+};
+
+// ─── CONTEXT MENU ──────────────────────────────────────────────────────────
+let ctxMenuEl = null;
+function showCtxMenu(e, msgId) {
+  e.preventDefault();
+  removeCtxMenu();
+  const msg = findMsg(msgId);
+  if(!msg || msg.deleted) return;
+  const isMine = msg.from === currentUser.id;
+
+  ctxMenuEl = document.createElement('div');
+  ctxMenuEl.className = 'msg-context-menu';
+  ctxMenuEl.style.left = `${e.pageX}px`;
+  ctxMenuEl.style.top = `${e.pageY}px`;
+
+  let html = '';
+  html += `<div class="emoji-bar" style="border-bottom:1px solid var(--gray-200);">`;
+  ['👍','❤️','😂','😮','😢','🙏'].forEach(em => {
+    html += `<span class="emoji-btn" style="padding:4px;font-size:16px;" onclick="reactMsg('${msgId}','${em}')">${em}</span>`;
+  });
+  html += `</div>`;
+
+  if(isMine && msg.type === 'text') {
+    html += `<div class="msg-ctx-item" onclick="openEditMsg('${msgId}')"><i class="ti ti-edit"></i> Edit Message</div>`;
+  }
+  if(isMine || (activeChat.type!=='dm' && activeChat.admin === currentUser.id)) {
+    html += `<div class="msg-ctx-item danger" onclick="deleteMsg('${msgId}')"><i class="ti ti-trash"></i> Delete Message</div>`;
+  }
+  
+  ctxMenuEl.innerHTML = html;
+  document.body.appendChild(ctxMenuEl);
+}
+
+function removeCtxMenu() { if(ctxMenuEl) { ctxMenuEl.remove(); ctxMenuEl = null; } }
+function findMsg(id) { if(!activeChat || !activeChat.messages) return null; return activeChat.messages.find(m => m.id === id); }
+
+async function reactMsg(msgId, emoji) {
+  removeCtxMenu();
+  if (!activeChat) return;
+  const msg = findMsg(msgId);
+  if(!msg) return;
+  
+  let reactions = msg.reactions || [];
+  const ex = reactions.find(r => r.emoji === emoji);
+  if(ex) ex.count++; else reactions.push({emoji, count:1});
+  
+  await db.collection("chats").doc(activeChat.id).collection("messages").doc(msgId).update({ reactions });
+}
+
+async function deleteMsg(msgId) {
+  removeCtxMenu();
+  if(!activeChat) return;
+  await db.collection("chats").doc(activeChat.id).collection("messages").doc(msgId).update({ deleted: true, text: '' });
+  showToast('Message deleted');
+}
+
+function openEditMsg(msgId) {
+  removeCtxMenu();
+  editMsgTarget = msgId;
+  const msg = findMsg(msgId);
+  document.getElementById('editMsgText').value = msg ? msg.text : '';
+  openModal('editMsgModal');
+}
+
+async function saveEditMsg() {
+  if (!activeChat || !editMsgTarget) return;
+  const newText = document.getElementById('editMsgText').value;
+  await db.collection("chats").doc(activeChat.id).collection("messages").doc(editMsgTarget).update({ text: newText, edited: true });
+  closeModal('editMsgModal');
+  showToast('Message updated');
+}
+
+// ─── SEND MESSAGE ──────────────────────────────────────────────────────────
+async function sendMessage() {
+  if(!activeChat) return;
+  const input = document.getElementById('msgInput');
+  const text = input.innerText.trim();
+  if(!text) return;
+  
+  const msgText = text;
+  input.innerText = '';
+  
+  const msgData = {
+    from: currentUser.id,
+    text: msgText,
+    ts: Date.now(),
+    type: 'text'
+  };
+
+  try {
+    await db.collection("chats").doc(activeChat.id).collection("messages").add(msgData);
+    await db.collection("chats").doc(activeChat.id).update({
+      lastMessage: {
+        text: msgText,
+        from: currentUser.id,
+        ts: Date.now(),
+        type: 'text'
+      },
+      updatedAt: Date.now()
+    });
+  } catch(e) {
+    console.error("Failed to send message:", e);
+    showToast("Send failed", "danger");
+  }
+}
+
+function handleInputKey(e) {
+  if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+// ─── FILE / IMAGE ──────────────────────────────────────────────────────────
+function triggerFileUpload() { document.getElementById('fileInput').click(); }
+function triggerImageUpload() { document.getElementById('imageInput').click(); }
+
+async function uploadFileToFirebase(file, path) {
+  const storageRef = storage.ref(path);
+  await storageRef.put(file);
+  return await storageRef.getDownloadURL();
+}
+
+async function handleFileUpload(e) {
+  const file = e.target.files[0]; if(!file||!activeChat) return;
+  showToast('Uploading file...');
+  try {
+    const downloadUrl = await uploadFileToFirebase(file, `chats/${activeChat.id}/files/${Date.now()}_${file.name}`);
+    const msgData = {
+      from: currentUser.id,
+      text: downloadUrl,
+      ts: Date.now(),
+      type: 'file',
+      fileName: file.name,
+      fileSize: formatBytes(file.size)
+    };
+    await db.collection("chats").doc(activeChat.id).collection("messages").add(msgData);
+    await db.collection("chats").doc(activeChat.id).update({
+      lastMessage: {
+        text: `📎 File: ${file.name}`,
+        from: currentUser.id,
+        ts: Date.now(),
+        type: 'file'
+      },
+      updatedAt: Date.now()
+    });
+    showToast('File uploaded successfully', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('File upload failed', 'danger');
+  }
+  e.target.value='';
+}
+
+async function handleImageUpload(e) {
+  const file = e.target.files[0]; if(!file||!activeChat) return;
+  showToast('Uploading image...');
+  try {
+    const downloadUrl = await uploadFileToFirebase(file, `chats/${activeChat.id}/images/${Date.now()}_${file.name}`);
+    const msgData = {
+      from: currentUser.id,
+      text: downloadUrl,
+      ts: Date.now(),
+      type: 'image',
+      fileName: file.name
+    };
+    await db.collection("chats").doc(activeChat.id).collection("messages").add(msgData);
+    await db.collection("chats").doc(activeChat.id).update({
+      lastMessage: {
+        text: `📷 Photo`,
+        from: currentUser.id,
+        ts: Date.now(),
+        type: 'image'
+      },
+      updatedAt: Date.now()
+    });
+    showToast('Image uploaded successfully', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Image upload failed', 'danger');
+  }
+  e.target.value='';
+}
+
+// ─── VOICE RECORDING ───────────────────────────────────────────────────────
+function toggleVoiceRecord() {
+  if(!activeChat) { showToast('Open a chat first','danger'); return; }
+  if(isRecording) { stopRecording(); } else { startRecording(); }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (e) => {
+      audioChunks.push(e.data);
+    };
+    
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const streamTracks = stream.getTracks();
+      streamTracks.forEach(track => track.stop());
+      
+      if (recSeconds > 0) {
+        showToast('Uploading voice note...');
+        const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+        try {
+          const downloadUrl = await uploadFileToFirebase(file, `chats/${activeChat.id}/voice/${file.name}`);
+          const m = Math.floor(recSeconds/60), s = recSeconds%60;
+          const dur = `${m}:${s.toString().padStart(2,'0')}`;
+          
+          const msgData = {
+            from: currentUser.id,
+            text: downloadUrl,
+            ts: Date.now(),
+            type: 'voice',
+            duration: dur
+          };
+          
+          await db.collection("chats").doc(activeChat.id).collection("messages").add(msgData);
+          await db.collection("chats").doc(activeChat.id).update({
+            lastMessage: {
+              text: `🎤 Voice note`,
+              from: currentUser.id,
+              ts: Date.now(),
+              type: 'voice'
+            },
+            updatedAt: Date.now()
+          });
+          showToast('Voice note sent', 'success');
+        } catch (err) {
+          console.error(err);
+          showToast('Failed to send voice note', 'danger');
+        }
+      }
+    };
+    
+    mediaRecorder.start();
+    isRecording = true; recSeconds = 0;
+    document.getElementById('voiceBtn').classList.add('recording');
+    document.getElementById('msgInput').style.display = 'none';
+    document.getElementById('recordingBar').classList.remove('hidden');
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60), s = recSeconds%60;
+      document.getElementById('recTime').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+  } catch (err) {
+    console.error("Microphone access denied:", err);
+    showToast("Could not access microphone", "danger");
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  clearInterval(recInterval);
+  isRecording = false;
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('msgInput').style.display = 'block';
+  document.getElementById('recordingBar').classList.add('hidden');
+}
+
+function cancelRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    recSeconds = 0;
+    mediaRecorder.stop();
+  }
+  clearInterval(recInterval);
+  isRecording = false;
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('msgInput').style.display = 'block';
+  document.getElementById('recordingBar').classList.add('hidden');
+}
+
+// ─── EMOJI ─────────────────────────────────────────────────────────────────
+function toggleEmoji() {
+  const p = document.getElementById('emojiPicker');
+  if(p.classList.contains('hidden')) {
+    p.classList.remove('hidden');
+    p.innerHTML = '';
+    const emojis = ['😀','😂','😍','👍','👎','🔥','❤️','😢','😮','🎉','👋','🙏','💯','😎','🤔','👀','✅','🚀','💪','🎯','😅','🤣','😊','🥳','😴','🤝','👏','🌟','⚡','🎊'];
+    emojis.forEach(em => {
+      const btn = document.createElement('button');
+      btn.className = 'emoji-btn'; btn.textContent = em;
+      btn.onclick = () => { const inp = document.getElementById('msgInput'); inp.innerText += em; inp.focus(); p.classList.add('hidden'); };
+      p.appendChild(btn);
+    });
+  } else { p.classList.add('hidden'); }
+}
+
+// ─── MODALS ────────────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+  if(id==='profileModal') fillProfile();
+  if(id==='newDMModal') { 
+    const inp = document.getElementById('dmSearch');
+    if (inp) { inp.value = ''; }
+    pickerSelections['dm'] = []; selectedDMUser = null;
+    renderUserPicker('dmSearch','dmPicker','dm'); 
+  }
+  if(id==='newGroupModal') { 
+    const inp = document.getElementById('groupSearch');
+    if (inp) { inp.value = ''; }
+    pickerSelections['group'] = [];
+    document.getElementById('groupChips').innerHTML = '';
+    renderUserPicker('groupSearch','groupPicker','group'); 
+  }
+  if(id==='newBroadcastModal') { 
+    const inp = document.getElementById('broadcastSearch');
+    if (inp) { inp.value = ''; }
+    pickerSelections['broadcast'] = [];
+    document.getElementById('broadcastChips').innerHTML = '';
+    renderUserPicker('broadcastSearch','broadcastPicker','broadcast'); 
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+function fillProfile() {
+  const profileAvatar = document.getElementById('profileAvatar');
+  if (currentUser.avatarUrl) {
+    profileAvatar.innerHTML = `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+    profileAvatar.style.background = 'none';
+  } else {
+    profileAvatar.textContent = currentUser.initials;
+    profileAvatar.style.background = currentUser.color;
+  }
+  
+  if (currentUser.verified) {
+    const label = document.getElementById('profileEmpId');
+    if (label && !label.innerHTML.includes('ti-discount-check-filled')) {
+      label.innerHTML = `${currentUser.empId} <i class="ti ti-discount-check-filled" style="color:#1d9bf0; font-size:14px; vertical-align:middle;"></i>`;
+    }
+  }
+  
+  document.getElementById('profileEmpId').textContent = currentUser.empId;
+  document.getElementById('profileDept').textContent = currentUser.dept;
+  document.getElementById('profileFirst').value = currentUser.firstName || '';
+  document.getElementById('profileLast').value = currentUser.lastName || '';
+  document.getElementById('profileNickname').value = currentUser.nickname || '';
+  document.getElementById('profileAbout').value = currentUser.about || '';
+  document.getElementById('profilePhone').value = currentUser.phone || '';
+  document.getElementById('profileStatus').value = currentUser.status || 'online';
+}
+
+window.triggerAvatarUpload = function() {
+  document.getElementById('avatarFileInput').click();
+};
+
+window.handleAvatarUpload = async function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  showToast('Uploading profile picture...');
+  try {
+    const downloadUrl = await uploadFileToFirebase(file, `users/${currentUser.id}/avatar_${Date.now()}`);
+    
+    await db.collection("users").doc(currentUser.id).update({
+      avatarUrl: downloadUrl
+    });
+    
+    currentUser.avatarUrl = downloadUrl;
+    const profileAvatar = document.getElementById('profileAvatar');
+    profileAvatar.innerHTML = `<img src="${downloadUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+    profileAvatar.style.background = 'none';
+    
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    if (sidebarAvatar) {
+      sidebarAvatar.innerHTML = `<img src="${downloadUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+      sidebarAvatar.style.background = 'none';
+    }
+    
+    showToast('Profile picture updated successfully', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Upload failed: ' + err.message, 'danger');
+  }
+  e.target.value = '';
+};
+
+window.saveUserProfile = async function() {
+  const first = document.getElementById('profileFirst').value.trim();
+  const last = document.getElementById('profileLast').value.trim();
+  const nickname = document.getElementById('profileNickname').value.trim();
+  const about = document.getElementById('profileAbout').value.trim();
+  const status = document.getElementById('profileStatus').value;
+  
+  if (!first || !last) {
+    showToast('First Name and Last Name are required', 'danger');
+    return;
+  }
+  
+  const initials = first[0].toUpperCase() + (last[0] || '').toUpperCase();
+  
+  showToast('Saving profile...');
+  try {
+    await db.collection("users").doc(currentUser.id).update({
+      firstName: first,
+      lastName: last,
+      nickname: nickname,
+      about: about,
+      status: status,
+      initials: initials
+    });
+    
+    currentUser.firstName = first;
+    currentUser.lastName = last;
+    currentUser.nickname = nickname;
+    currentUser.about = about;
+    currentUser.status = status;
+    currentUser.initials = initials;
+    
+    document.getElementById('sidebarName').innerHTML = getNameWithBadgeHtml(currentUser, `${first} ${last}`);
+    
+    closeModal('profileModal');
+    showToast('Profile updated', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to save: ' + err.message, 'danger');
+  }
+};
+
+// ─── USER PICKER ───────────────────────────────────────────────────────────
+function renderUserPicker(searchId, pickerId, ctx) {
+  const q = document.getElementById(searchId).value.trim().toLowerCase();
+  const el = document.getElementById(pickerId);
+  if (!el) return;
+
+  const canSeeAll = ['Admin', 'HR', 'CEO', 'Management'];
+  const hasGlobalSearch = currentUser.role && canSeeAll.includes(currentUser.role);
+
+  const available = users.filter(u => {
+    if (u.id === currentUser.id || u.active === false) return false;
+    
+    // Process search isolation
+    if (!hasGlobalSearch) {
+      if ((u.dept || '').toLowerCase() !== (currentUser.dept || '').toLowerCase()) return false;
+    }
+    
+    return (
+      (u.firstName || '').toLowerCase().includes(q) || 
+      (u.lastName || '').toLowerCase().includes(q) || 
+      (u.empId || '').toLowerCase().includes(q) ||
+      (u.phone || '').toLowerCase().includes(q) ||
+      (u.dept || '').toLowerCase().includes(q)
+    );
+  });
+  
+  el.innerHTML = available.length===0 ? `<div style="padding:10px;font-size:13px;color:var(--gray-400);">No employees found</div>` : '';
+  const sel = pickerSelections[ctx] || [];
+  available.forEach(u => {
+    const item = document.createElement('div');
+    item.className = 'user-pick-item' + (sel.includes(u.id)?' selected':'');
+    
+    const displayName = `${u.firstName} ${u.lastName} - (${u.dept})`;
+    const nameWithBadge = getNameWithBadgeHtml(u, displayName, '13px');
+    const avatarHtml = getUserAvatarHtml(u, '32px', '11px');
+    
+    item.innerHTML = `
+      ${avatarHtml}
+      <div>
+        <div class="user-pick-name">${nameWithBadge}</div>
+        <div class="user-pick-emp">${u.empId} · ${u.phone}</div>
+      </div>
+      ${sel.includes(u.id)?`<i class="ti ti-check check-icon"></i>`:''}`;
+    item.onclick = () => togglePickerUser(u, ctx, searchId, pickerId);
+    el.appendChild(item);
+  });
+}
+
+function togglePickerUser(user, ctx, searchId, pickerId) {
+  if(!pickerSelections[ctx]) pickerSelections[ctx] = [];
+  const idx = pickerSelections[ctx].indexOf(user.id);
+  if(ctx === 'dm') { pickerSelections[ctx] = [user.id]; selectedDMUser = user; }
+  else { if(idx>-1) pickerSelections[ctx].splice(idx,1); else pickerSelections[ctx].push(user.id); }
+  renderUserPicker(searchId, pickerId, ctx);
+  renderChips(ctx);
+}
+
+function renderChips(ctx) {
+  const chipsId = ctx==='group'?'groupChips':ctx==='broadcast'?'broadcastChips':ctx==='editgroup'?'editGroupChips':null;
+  if(!chipsId) return;
+  const el = document.getElementById(chipsId);
+  const sel = pickerSelections[ctx] || [];
+  el.innerHTML = sel.map(uid => {
+    const u = users.find(x=>x.id===uid);
+    return u?`<div class="chip"><span>${u.firstName}</span><span class="chip-remove" onclick="removeChipUser('${uid}','${ctx}')"><i class="ti ti-x" style="font-size:12px;"></i></span></div>`:'';
+  }).join('');
+}
+
+function removeChipUser(uid, ctx) {
+  pickerSelections[ctx] = (pickerSelections[ctx]||[]).filter(x=>x!==uid);
+  renderChips(ctx);
+}
+
+window.startDirectChat = async function(otherUserId) {
+  if (otherUserId === currentUser.id) {
+    showToast('You cannot start a conversation with yourself', 'danger');
+    return;
+  }
+  const otherUser = users.find(u => u.id === otherUserId);
+  if (!otherUser) {
+    showToast('User not found', 'danger');
+    return;
+  }
+  
+  // Close any potentially open modals
+  closeModal('manageEmployeesModal');
+  closeModal('newDMModal');
+  
+  const uids = [currentUser.id, otherUserId].sort();
+  const existingId = `dm-${uids[0]}-${uids[1]}`;
+  
+  showToast('Opening conversation...');
+  try {
+    const docRef = db.collection("chats").doc(existingId);
+    const docSnap = await docRef.get();
+    
+    if(!docSnap.exists) {
+      await docRef.set({
+        type: 'dm',
+        members: [currentUser.id, otherUserId],
+        updatedAt: Date.now(),
+        lastMessage: null
+      });
+    }
+    
+    openChat({ id: existingId, type: 'dm', members: [currentUser.id, otherUserId], messages: [] });
+    showToast(`Conversation started with ${otherUser.firstName}`, 'success');
+  } catch (err) {
+    console.error("Failed to start DM:", err);
+    showToast("Failed to start conversation: " + err.message, "danger");
+  }
+};
+
+// ─── CREATE CHAT ───────────────────────────────────────────────────────────
+async function createDM() {
+  if(!selectedDMUser) { showToast('Select an employee first','danger'); return; }
+  const uids = [currentUser.id, selectedDMUser.id].sort();
+  const existingId = `dm-${uids[0]}-${uids[1]}`;
+  
+  const docRef = db.collection("chats").doc(existingId);
+  const docSnap = await docRef.get();
+  
+  if(!docSnap.exists) {
+    await docRef.set({
+      type: 'dm',
+      members: [currentUser.id, selectedDMUser.id],
+      updatedAt: Date.now(),
+      lastMessage: null
+    });
+  }
+  
+  closeModal('newDMModal');
+  const targetUser = selectedDMUser;
+  pickerSelections['dm'] = []; selectedDMUser = null;
+  openChat({ id: existingId, type: 'dm', members: [currentUser.id, targetUser.id], messages: [] });
+  showToast(`Chat opened`);
+}
+
+async function createGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  if(!name) { showToast('Enter a group name','danger'); return; }
+  const members = [...(pickerSelections['group']||[]), currentUser.id];
+  const icon = document.getElementById('groupIcon').value;
+  
+  const chatId = 'grp-' + Date.now();
+  await db.collection("chats").doc(chatId).set({
+    type: 'group',
+    name,
+    icon,
+    members,
+    admin: currentUser.id,
+    updatedAt: Date.now(),
+    lastMessage: null
+  });
+  
+  closeModal('newGroupModal');
+  document.getElementById('groupName').value=''; pickerSelections['group']=[];
+  document.getElementById('groupChips').innerHTML=''; document.getElementById('groupPicker').innerHTML='';
+  openChat({ id: chatId, type: 'group', name, icon, members, admin: currentUser.id, messages: [] });
+  showToast(`Group "${name}" created`, 'success');
+}
+
+async function createBroadcast() {
+  const name = document.getElementById('broadcastName').value.trim();
+  if(!name) { showToast('Enter a broadcast name','danger'); return; }
+  const members = [...(pickerSelections['broadcast']||[]), currentUser.id];
+  
+  const chatId = 'bc-' + Date.now();
+  await db.collection("chats").doc(chatId).set({
+    type: 'broadcast',
+    name,
+    members,
+    admin: currentUser.id,
+    updatedAt: Date.now(),
+    lastMessage: null
+  });
+  
+  closeModal('newBroadcastModal');
+  document.getElementById('broadcastName').value=''; pickerSelections['broadcast']=[];
+  openChat({ id: chatId, type: 'broadcast', name, members, admin: currentUser.id, messages: [] });
+  showToast(`Broadcast "${name}" created`, 'success');
+}
+
+// ─── EDIT GROUP ────────────────────────────────────────────────────────────
+function initEditGroup() {
+  if(!activeChat||activeChat.type!=='group') return;
+  document.getElementById('editGroupName').value = activeChat.name;
+  pickerSelections['editgroup'] = [...activeChat.members.filter(m=>m!==currentUser.id)];
+  renderChips('editgroup');
+}
+
+async function saveEditGroup() {
+  if(!activeChat) return;
+  const name = document.getElementById('editGroupName').value.trim();
+  const newMembers = [...(pickerSelections['editgroup']||[])];
+  if(!newMembers.includes(currentUser.id)) newMembers.push(currentUser.id);
+  
+  const updates = {};
+  if (name) updates.name = name;
+  updates.members = newMembers;
+  
+  await db.collection("chats").doc(activeChat.id).update(updates);
+  closeModal('editGroupModal');
+  showToast('Group updated', 'success');
+}
+
+// ─── DELETE ────────────────────────────────────────────────────────────────
+function openDeleteModal() {
+  if(!activeChat) return;
+  deleteTarget = activeChat;
+  let name = '';
+  if(activeChat.type==='dm') { 
+    const oId = activeChat.members.find(m => m !== currentUser.id);
+    const o = users.find(u => u.id === oId);
+    name = o ? `${o.firstName} ${o.lastName}` : activeChat.id; 
+  } else {
+    name = activeChat.name;
+  }
+  document.getElementById('deleteTargetName').textContent = name;
+  openModal('deleteModal');
+}
+
+async function confirmDelete() {
+  if(!deleteTarget) return;
+  await db.collection("chats").doc(deleteTarget.id).delete();
+  
+  activeChat = null;
+  document.getElementById('activeChat').style.display='none';
+  document.getElementById('welcomePane').classList.remove('hidden');
+  document.getElementById('rightPanel').classList.add('hidden');
+  closeModal('deleteModal');
+  showToast('Chat deleted');
+}
+
+// ─── ADMIN CREATE ──────────────────────────────────────────────────────────
+async function adminCreateUser() {
+  const first=document.getElementById('aFirst').value.trim(), last=document.getElementById('aLast').value.trim();
+  const emp=document.getElementById('aEmp').value.trim(), phone=document.getElementById('aPhone').value.trim();
+  const dept=document.getElementById('aDept').value, pass=document.getElementById('aPass').value;
+  const role=document.getElementById('aRole').value;
+  if(!first||!last||!emp||!phone||!pass) { showToast('Fill all fields','danger'); return; }
+  if(users.find(u=>u.empId.toLowerCase()===emp.toLowerCase())) { showToast('Employee ID exists','danger'); return; }
+  
+  showToast('Creating employee...');
+  try {
+    const email = `${emp.toLowerCase()}@vcatch.internal`;
+    const uid = await createFirebaseUserWithoutSignout(email, pass);
+    
+    const initials = first[0].toUpperCase() + (last[0] || '').toUpperCase();
+    const colors=['#E8A020','#1D9E75','#378ADD','#993356','#534AB7','#3B6D11'];
+    const randomColor = colors[users.length % colors.length];
+    
+    await db.collection("users").doc(uid).set({
+      empId: emp,
+      firstName: first,
+      lastName: last,
+      phone: phone,
+      dept: dept,
+      pass: pass,
+      initials: initials,
+      color: randomColor,
+      status: 'offline',
+      role: role,
+      active: true
+    });
+    
+    closeModal('adminCreateModal');
+    ['aFirst','aLast','aEmp','aPhone','aPass'].forEach(id=>document.getElementById(id).value='');
+    showToast(`${first} ${last} added successfully`, 'success');
+    renderEmployeeTable();
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to create employee: " + err.message, "danger");
+  }
+}
+
+// ─── BULK CSV UPLOAD ───────────────────────────────────────────────────────
+async function handleBulkCSVUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/);
+    if (lines.length < 2) {
+      showToast("CSV file is empty or invalid", "danger");
+      return;
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+    const empIdIdx = headers.indexOf("employee id");
+    const firstIdx = headers.indexOf("first name");
+    const lastIdx = headers.indexOf("last name");
+    const phoneIdx = headers.indexOf("phone");
+    const deptIdx = headers.indexOf("department");
+    const roleIdx = headers.indexOf("role");
+    const passIdx = headers.indexOf("password");
+    
+    if (empIdIdx === -1 || firstIdx === -1 || lastIdx === -1 || phoneIdx === -1 || deptIdx === -1 || roleIdx === -1 || passIdx === -1) {
+      showToast("CSV columns must include: Employee ID, First Name, Last Name, Phone, Department, Role, Password", "danger");
+      return;
+    }
+    
+    showToast("Importing employees...");
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+      const cleanCols = cols.map(c => c.trim().replace(/^["']|["']$/g, ''));
+      
+      if (cleanCols.length < headers.length) {
+        failCount++;
+        continue;
+      }
+      
+      const empId = cleanCols[empIdIdx];
+      const firstName = cleanCols[firstIdx];
+      const lastName = cleanCols[lastIdx];
+      const phone = cleanCols[phoneIdx];
+      const dept = cleanCols[deptIdx];
+      const role = cleanCols[roleIdx];
+      const pass = cleanCols[passIdx];
+      
+      if (!empId || !firstName || !lastName || !phone || !pass) {
+        failCount++;
+        continue;
+      }
+      
+      try {
+        const email = `${empId.toLowerCase()}@vcatch.internal`;
+        const uid = await createFirebaseUserWithoutSignout(email, pass);
+        
+        const initials = firstName[0].toUpperCase() + (lastName[0] || '').toUpperCase();
+        const colors = ['#E8A020','#1D9E75','#378ADD','#993356','#534AB7','#3B6D11'];
+        const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        await db.collection("users").doc(uid).set({
+          empId: empId,
+          firstName: firstName,
+          lastName: lastName,
+          phone: phone,
+          dept: dept,
+          pass: pass,
+          initials: initials,
+          color: randomColor,
+          status: 'offline',
+          role: role,
+          active: true
+        });
+        
+        successCount++;
+      } catch (err) {
+        console.error("Bulk upload failed for:", empId, err);
+        failCount++;
+      }
+    }
+    
+    showToast(`Successfully added ${successCount} employees. Failed: ${failCount}`, successCount > 0 ? "success" : "danger");
+    renderEmployeeTable();
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function renderEmployeeTable() {
+  const tbody = document.getElementById('employeeTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  const searchInput = document.getElementById('employeeSearchInput');
+  const searchVal = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const sortVal = document.getElementById('employeeSortSelect') ? document.getElementById('employeeSortSelect').value : 'empId_asc';
+  const roleVal = document.getElementById('employeeRoleFilter') ? document.getElementById('employeeRoleFilter').value : 'all';
+  const statusVal = document.getElementById('employeeStatusFilter') ? document.getElementById('employeeStatusFilter').value : 'all';
+  
+  // 1. Filtering
+  let filtered = users.filter(u => {
+    const fullName = `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase();
+    const nickname = (u.nickname || '').toLowerCase();
+    const empId = (u.empId || '').toLowerCase();
+    const phone = (u.phone || '').toLowerCase();
+    const dept = (u.dept || '').toLowerCase();
+    
+    const matchesSearch = !searchVal || fullName.includes(searchVal) || nickname.includes(searchVal) || empId.includes(searchVal) || phone.includes(searchVal) || dept.includes(searchVal);
+    const matchesRole = roleVal === 'all' || u.role === roleVal;
+    
+    const isActive = u.active !== false;
+    const matchesStatus = statusVal === 'all' || 
+                         (statusVal === 'active' && isActive) || 
+                         (statusVal === 'inactive' && !isActive);
+                         
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+  
+  // 2. Sorting
+  filtered.sort((a, b) => {
+    let fieldA = '', fieldB = '';
+    if (sortVal.startsWith('name')) {
+      fieldA = `${a.firstName || ''} ${a.lastName || ''}`.toLowerCase();
+      fieldB = `${b.firstName || ''} ${b.lastName || ''}`.toLowerCase();
+    } else {
+      fieldA = (a.empId || '').toLowerCase();
+      fieldB = (b.empId || '').toLowerCase();
+    }
+    
+    if (fieldA < fieldB) return sortVal.endsWith('asc') ? -1 : 1;
+    if (fieldA > fieldB) return sortVal.endsWith('asc') ? 1 : -1;
+    return 0;
+  });
+  
+  // 3. Render rows
+  filtered.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--gray-200)';
+    
+    const isActive = u.active !== false;
+    const rawName = u.nickname ? `${u.firstName} ${u.lastName} (${u.nickname})` : `${u.firstName} ${u.lastName}`;
+    const nameWithBadge = getNameWithBadgeHtml(u, rawName, '13px');
+    
+    const isSelf = u.id === currentUser.id;
+    const chatBtn = !isSelf ? `
+      <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; background: var(--info); color: white;" onclick="startDirectChat('${u.id}')">
+        Chat
+      </button>` : '';
+
+    tr.innerHTML = `
+      <td style="padding: 10px 12px; font-weight: 500;">${u.empId}</td>
+      <td style="padding: 10px 12px;">${nameWithBadge}</td>
+      <td style="padding: 10px 12px;"><span class="member-role">${u.role || 'Employee'}</span></td>
+      <td style="padding: 10px 12px;">${u.dept}</td>
+      <td style="padding: 10px 12px;">
+        <span style="font-weight: 600; color: ${isActive ? 'var(--success)' : 'var(--danger)'}">
+          ${isActive ? 'Active' : 'Banned'}
+        </span>
+      </td>
+      <td style="padding: 10px 12px; text-align: center;">
+        <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+          ${chatBtn}
+          <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; background: var(--gold); color: var(--black);" onclick="openEditEmployeeModal('${u.id}')">
+            Edit
+          </button>
+          <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; background: ${isActive ? 'var(--danger)' : 'var(--success)'}; color: white;" onclick="toggleUserActiveState('${u.id}', ${isActive})">
+            ${isActive ? 'Ban' : 'Unban'}
+          </button>
+          <button class="btn-primary" style="padding: 4px 8px; font-size: 11px; width: auto; background: ${u.verified ? 'var(--gray-600)' : 'var(--info)'}; color: white;" onclick="toggleUserVerification('${u.id}', ${!!u.verified})">
+            ${u.verified ? 'Unverify' : 'Verify'}
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+window.toggleUserActiveState = async function(userId, currentActiveState) {
+  if (userId === currentUser.id) {
+    showToast("You cannot deactivate/ban your own account!", "danger");
+    return;
+  }
+  try {
+    await db.collection("users").doc(userId).update({ active: !currentActiveState });
+    showToast(`Employee active status updated`, "success");
+    renderEmployeeTable();
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to update status", "danger");
+  }
+};
+
+window.toggleUserVerification = async function(userId, currentVerificationState) {
+  try {
+    await db.collection("users").doc(userId).update({ verified: !currentVerificationState });
+    showToast(`Employee verification status updated`, "success");
+    renderEmployeeTable();
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to update verification", "danger");
+  }
+};
+
+window.downloadCSVTemplate = function() {
+  const csvContent = "Employee ID,First Name,Last Name,Phone,Department,Role,Password\n" +
+                     "VC0647,John,Doe,+919876543210,ITI FINANCE,Employee,User@2026\n" +
+                     "VC0648,Jane,Smith,+919876543211,CRED,HR,User@2026\n" +
+                     "ITI001,Raj,Kumar,+919876543212,SMARTCOIN,Employee,User@2026";
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "vcatch_employee_template.csv");
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+window.openEditEmployeeModal = function(userId) {
+  const u = users.find(x => x.id === userId);
+  if (!u) return;
+  document.getElementById('editUserId').value = u.id;
+  document.getElementById('editFirst').value = u.firstName || '';
+  document.getElementById('editLast').value = u.lastName || '';
+  document.getElementById('editEmp').value = u.empId || '';
+  document.getElementById('editPhone').value = u.phone || '';
+  document.getElementById('editDept').value = u.dept || 'ITI FINANCE';
+  document.getElementById('editRole').value = u.role || 'Employee';
+  document.getElementById('editPass').value = '';
+  
+  openModal('adminEditModal');
+};
+
+window.adminSaveEmployee = async function() {
+  const uid = document.getElementById('editUserId').value;
+  const first = document.getElementById('editFirst').value.trim();
+  const last = document.getElementById('editLast').value.trim();
+  const phone = document.getElementById('editPhone').value.trim();
+  const dept = document.getElementById('editDept').value;
+  const role = document.getElementById('editRole').value;
+  const newPass = document.getElementById('editPass').value;
+  
+  if (!first || !last || !phone) {
+    showToast('First Name, Last Name, and Phone are required', 'danger');
+    return;
+  }
+  
+  const u = users.find(x => x.id === uid);
+  if (!u) return;
+  
+  showToast('Saving employee...');
+  try {
+    const initials = first[0].toUpperCase() + (last[0] || '').toUpperCase();
+    const updates = {
+      firstName: first,
+      lastName: last,
+      phone: phone,
+      dept: dept,
+      role: role,
+      initials: initials
+    };
+    
+    if (newPass) {
+      const email = `${u.empId.toLowerCase()}@vcatch.internal`;
+      await updateFirebaseUserPasswordWithoutSignout(email, u.pass, newPass);
+      updates.pass = newPass;
+    }
+    
+    await db.collection("users").doc(uid).update(updates);
+    closeModal('adminEditModal');
+    showToast('Employee details updated successfully', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to save changes: ' + err.message, 'danger');
+  }
+};
+
+function renderRightPanel(chat) {
+  const rp = document.getElementById('rightPanel');
+  if (!rp) return;
+
+  const memberIds = chat.members || [];
+  const memberHtml = memberIds.map(uid => {
+    const u = users.find(x=>x.id===uid);
+    if(!u) return '';
+    
+    const displayName = `${u.firstName} ${u.lastName}`;
+    const nameWithBadge = getNameWithBadgeHtml(u, displayName, '13px');
+    const avatarHtml = getUserAvatarHtml(u, '32px', '11px');
+    
+    const isSelf = u.id === currentUser.id;
+    const chatBtn = !isSelf ? `
+      <button class="icon-btn" style="width:28px;height:28px;font-size:14px;color:var(--gold-dark);margin-left:6px;" onclick="startDirectChat('${u.id}')" title="Message ${u.firstName}">
+        <i class="ti ti-message"></i>
+      </button>` : '';
+    
+    return `<div class="member-item" style="display:flex;align-items:center;">
+      ${avatarHtml}
+      <div style="flex:1;min-width:0;margin-left:10px;">
+        <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nameWithBadge}</div>
+        <div style="font-size:11px;color:var(--gray-400);">${u.empId}</div>
+      </div>
+      ${chat.admin===uid?`<span class="member-role" style="margin-left:4px;">Admin</span>`:''}
+      ${chatBtn}
+    </div>`;
+  }).join('');
+  
+  const inviteLinkSection = chat.type === 'group' ? `
+    <div style="padding: 12px 16px; border-bottom:1px solid var(--gray-200);">
+      <button class="btn-gold" style="width:100%; padding: 8px; font-size:12px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-weight:600; cursor:pointer;" onclick="copyGroupInviteLink('${chat.id}')">
+        <i class="ti ti-link"></i> Copy Invite Link
+      </button>
+    </div>` : '';
+
+  rp.innerHTML = `
+    <div class="right-panel-header">
+      <div class="right-panel-title">${chat.type==='broadcast'?'Recipients':'Members'} (${memberIds.length})</div>
+      <button class="icon-btn" onclick="document.getElementById('rightPanel').classList.add('hidden')"><i class="ti ti-x"></i></button>
+    </div>
+    ${inviteLinkSection}
+    <div class="member-list">${memberHtml}</div>`;
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts), now = new Date();
+  if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const diff = Math.floor((now-d)/86400000);
+  if(diff===1) return 'Yesterday';
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function formatTimeFull(ts) { 
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); 
+}
+function formatBytes(b) { if(b<1024) return b+'B'; if(b<1048576) return (b/1024).toFixed(1)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
+function escHtml(str) { const d=document.createElement('div'); d.appendChild(document.createTextNode(str)); return d.innerHTML; }
+
+function showToast(msg, type='') {
+  const c = document.getElementById('toastContainer');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = `toast${type?' '+type:''}`;
+  t.innerHTML = `<i class="ti ti-${type==='success'?'check':type==='danger'?'alert-circle':'info-circle'}"></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(100%)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+// Close emoji on outside click
+document.addEventListener('click', (e) => {
+  const p = document.getElementById('emojiPicker');
+  if(p && !p.classList.contains('hidden') && !p.contains(e.target) && !e.target.closest('.icon-btn')) {
+    p.classList.add('hidden');
+  }
+});
+
+// Demo hint
+showToast('Sign in: VC0646 / Admin@2026');
+
+console.log("VCATCH Chat Version: 1.0.3 - Cache Bypassed");
+
+// Protocol check display warning
+if (window.location.protocol === 'file:') {
+  const warnEl = document.getElementById('protocolWarning');
+  if (warnEl) warnEl.style.display = 'block';
+}
+</script>
+</body>
+</html>
