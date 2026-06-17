@@ -565,6 +565,26 @@
   </div>
 </div>
 
+<!-- Mandatory Avatar Upload Modal -->
+<div id="mandatoryAvatarModal" class="modal-backdrop hidden" style="z-index: 9999;">
+  <div class="modal" style="max-width: 400px; text-align: center; padding: 30px;">
+    <h2 style="font-size: 20px; font-weight: 700; color: var(--white); margin-bottom: 12px;">Profile Picture Required</h2>
+    <p style="font-size: 14px; color: var(--gray-400); margin-bottom: 24px; line-height: 1.5;">
+      To access VCATCH Chat, please upload your profile picture. This helps colleagues recognize you.
+    </p>
+    
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 24px;">
+      <div id="mandatoryAvatarContainer" onclick="triggerAvatarUpload()" style="position: relative; width: 100px; height: 100px; cursor: pointer; border-radius: 50%; border: 3px solid var(--gold); display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--gold-light);">
+        <div id="mandatoryAvatar" style="font-size: 32px; font-weight: 700; color: #000;">MA</div>
+        <div style="position: absolute; bottom: 0; right: 0; background: var(--black); color: var(--white); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid var(--white);">
+          <i class="ti ti-camera"></i>
+        </div>
+      </div>
+      <span style="font-size: 12px; color: var(--gray-500);">Click the circle to select photo</span>
+    </div>
+  </div>
+</div>
+
 <!-- Profile Modal -->
 <div id="profileModal" class="modal-backdrop hidden">
   <div class="modal" style="max-width: 420px;">
@@ -819,6 +839,9 @@ if (!firebase.apps.length) {
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
+storage.setMaxUploadRetryTime(3000);
+storage.setMaxOperationRetryTime(3000);
+
 
 // Error logging to Firestore
 window.onerror = function(message, source, lineno, colno, error) {
@@ -874,6 +897,24 @@ let pickerSelections = {};
 
 let mediaRecorder = null;
 let audioChunks = [];
+
+const natureAvatars = [
+  "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1472214222541-d510753a8707?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=150&h=150&q=80",
+  "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?auto=format&fit=crop&w=150&h=150&q=80"
+];
 
 // Listeners unsubscribe functions
 let usersUnsub = null;
@@ -955,6 +996,7 @@ async function ensureMasterAdminExists() {
           pass: "Admin@2026",
           initials: "MA",
           color: "#E8A020",
+          avatarUrl: "https://randomuser.me/api/portraits/men/3.jpg",
           status: "online",
           role: "Admin",
           active: true
@@ -983,6 +1025,7 @@ async function ensureMasterAdminExists() {
           pass: "Admin@2026",
           initials: "MA",
           color: "#E8A020",
+          avatarUrl: "https://randomuser.me/api/portraits/men/3.jpg",
           status: "online",
           role: "Admin",
           active: true
@@ -1034,6 +1077,7 @@ auth.onAuthStateChanged(async (authUser) => {
             pass: "Admin@2026",
             initials: "MA",
             color: "#E8A020",
+            avatarUrl: "https://randomuser.me/api/portraits/men/3.jpg",
             status: "online",
             role: "Admin",
             active: true
@@ -1163,6 +1207,17 @@ function loginAs(user) {
 
   startRealTimeListeners();
   switchSidebarTab('dm');
+  
+  // Mandatory profile picture enforcement
+  const needsUpload = !user.avatarUrl || user.avatarUrl.includes('images.unsplash.com');
+  if (needsUpload) {
+    const mandatoryAvatar = document.getElementById('mandatoryAvatar');
+    if (mandatoryAvatar) {
+      mandatoryAvatar.textContent = user.initials;
+      mandatoryAvatar.parentNode.style.background = user.color || 'var(--gold)';
+    }
+    openModal('mandatoryAvatarModal');
+  }
 }
 
 function signOut() {
@@ -1364,12 +1419,40 @@ window.toggleTheme = function(isDark) {
 function startRealTimeListeners() {
   stopRealTimeListeners();
 
-  // 1. Users collection listener
   usersUnsub = db.collection("users").onSnapshot((snapshot) => {
     users = [];
     snapshot.forEach((docSnap) => {
       users.push({ id: docSnap.id, ...docSnap.data() });
     });
+    
+    if (currentUser) {
+      const latestMe = users.find(u => u.id === currentUser.id);
+      if (latestMe) {
+        currentUser = latestMe;
+        // Keep main sidebar header up to date
+        const sidebarName = document.getElementById('sidebarName');
+        if (sidebarName) sidebarName.innerHTML = getNameWithBadgeHtml(currentUser, `${currentUser.firstName} ${currentUser.lastName}`);
+        const sidebarEmp = document.getElementById('sidebarEmp');
+        if (sidebarEmp) sidebarEmp.textContent = `${currentUser.empId} · ${currentUser.dept}`;
+        
+        const sidebarAvatar = document.getElementById('sidebarAvatar');
+        if (sidebarAvatar) {
+          if (currentUser.avatarUrl) {
+            sidebarAvatar.innerHTML = `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+            sidebarAvatar.style.background = 'none';
+          } else {
+            sidebarAvatar.innerHTML = '';
+            sidebarAvatar.textContent = currentUser.initials;
+            sidebarAvatar.style.background = currentUser.color;
+          }
+        }
+        
+        // Refresh settings tab if currently viewing it
+        if (activeSidebarTab === 'settings') {
+          renderSettingsTab();
+        }
+      }
+    }
     
     renderSidebar();
     renderEmployeeTable();
@@ -2139,18 +2222,20 @@ function fillProfile() {
     profileAvatar.innerHTML = `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
     profileAvatar.style.background = 'none';
   } else {
+    profileAvatar.innerHTML = '';
     profileAvatar.textContent = currentUser.initials;
     profileAvatar.style.background = currentUser.color;
   }
   
-  if (currentUser.verified) {
-    const label = document.getElementById('profileEmpId');
-    if (label && !label.innerHTML.includes('ti-discount-check-filled')) {
+  const label = document.getElementById('profileEmpId');
+  if (label) {
+    if (currentUser.verified) {
       label.innerHTML = `${currentUser.empId} <i class="ti ti-discount-check-filled" style="color:#1d9bf0; font-size:14px; vertical-align:middle;"></i>`;
+    } else {
+      label.textContent = currentUser.empId;
     }
   }
   
-  document.getElementById('profileEmpId').textContent = currentUser.empId;
   document.getElementById('profileDept').textContent = currentUser.dept;
   document.getElementById('profileFirst').value = currentUser.firstName || '';
   document.getElementById('profileLast').value = currentUser.lastName || '';
@@ -2163,6 +2248,18 @@ function fillProfile() {
 window.triggerAvatarUpload = function() {
   document.getElementById('avatarFileInput').click();
 };
+
+function timeoutPromise(promise, ms, errorMsg) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(errorMsg || "Operation timed out"));
+    }, ms);
+    promise.then(
+      (res) => { clearTimeout(timer); resolve(res); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
 
 function compressImage(file, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -2206,26 +2303,42 @@ window.handleAvatarUpload = async function(e) {
   const file = e.target.files[0];
   if (!file) return;
   
+  if (!file.type.startsWith('image/')) {
+    showToast('Please select a valid image file', 'danger');
+    return;
+  }
+  
+  console.log("Avatar upload process started for file:", file.name, "size:", file.size);
   showToast('Processing image...');
   try {
     // 1. Compress image client-side to a small 128x128 base64 jpeg
+    console.log("Compressing image client-side...");
     const base64DataUrl = await compressImage(file, 128, 128, 0.7);
+    console.log("Image compression complete. Base64 length:", base64DataUrl.length);
     
     let downloadUrl = null;
     showToast('Uploading profile picture...');
     try {
-      // 2. Try uploading to Firebase Storage first
-      downloadUrl = await uploadFileToFirebase(file, `users/${currentUser.id}/avatar_${Date.now()}`);
+      // 2. Try uploading to Firebase Storage first with a strict 1500ms timeout
+      console.log("Attempting Firebase Storage upload with timeout...");
+      downloadUrl = await timeoutPromise(
+        uploadFileToFirebase(file, `users/${currentUser.id}/avatar_${Date.now()}`),
+        1500,
+        "Firebase Storage timeout"
+      );
+      console.log("Firebase Storage upload succeeded:", downloadUrl);
     } catch (storageErr) {
-      console.warn("Firebase Storage upload failed, falling back to local base64 storage:", storageErr);
+      console.warn("Firebase Storage upload failed or timed out, falling back to local base64 storage:", storageErr);
       // Fallback to base64 Data URL if storage is misconfigured or blocked by CORS
       downloadUrl = base64DataUrl;
     }
     
     // 3. Update user document in Firestore
+    console.log("Updating Firestore user document...");
     await db.collection("users").doc(currentUser.id).update({
       avatarUrl: downloadUrl
     });
+    console.log("Firestore document updated successfully.");
     
     currentUser.avatarUrl = downloadUrl;
     
@@ -2248,9 +2361,29 @@ window.handleAvatarUpload = async function(e) {
       settingsAvatar.style.background = 'none';
     }
     
+    // Update mandatory avatar preview if open
+    const mandatoryAvatar = document.getElementById('mandatoryAvatar');
+    if (mandatoryAvatar) {
+      mandatoryAvatar.innerHTML = `<img src="${downloadUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+      mandatoryAvatar.parentNode.style.background = 'none';
+    }
+    
+    // Close mandatory modal if open
+    const mandatoryModal = document.getElementById('mandatoryAvatarModal');
+    if (mandatoryModal && !mandatoryModal.classList.contains('hidden')) {
+      setTimeout(() => {
+        closeModal('mandatoryAvatarModal');
+      }, 800);
+    }
+    
+    // Update Settings tab if currently active
+    if (activeSidebarTab === 'settings') {
+      renderSettingsTab();
+    }
+    
     showToast('Profile picture updated successfully', 'success');
   } catch (err) {
-    console.error(err);
+    console.error("Avatar upload failed:", err);
     showToast('Upload failed: ' + err.message, 'danger');
   }
   e.target.value = '';
@@ -2549,6 +2682,7 @@ async function adminCreateUser() {
     const initials = first[0].toUpperCase() + (last[0] || '').toUpperCase();
     const colors=['#E8A020','#1D9E75','#378ADD','#993356','#534AB7','#3B6D11'];
     const randomColor = colors[users.length % colors.length];
+    const randomAvatarUrl = natureAvatars[Math.floor(Math.random() * natureAvatars.length)];
     
     await db.collection("users").doc(uid).set({
       empId: emp,
@@ -2559,6 +2693,7 @@ async function adminCreateUser() {
       pass: pass,
       initials: initials,
       color: randomColor,
+      avatarUrl: randomAvatarUrl,
       status: 'offline',
       role: role,
       active: true
@@ -2638,6 +2773,7 @@ async function handleBulkCSVUpload(event) {
         const initials = firstName[0].toUpperCase() + (lastName[0] || '').toUpperCase();
         const colors = ['#E8A020','#1D9E75','#378ADD','#993356','#534AB7','#3B6D11'];
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const randomAvatarUrl = natureAvatars[Math.floor(Math.random() * natureAvatars.length)];
         
         await db.collection("users").doc(uid).set({
           empId: empId,
@@ -2648,6 +2784,7 @@ async function handleBulkCSVUpload(event) {
           pass: pass,
           initials: initials,
           color: randomColor,
+          avatarUrl: randomAvatarUrl,
           status: 'offline',
           role: role,
           active: true
@@ -2938,8 +3075,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Demo hint
-showToast('Sign in: VC0646 / Admin@2026');
 
 console.log("VCATCH Chat Version: 1.0.3 - Cache Bypassed");
 
