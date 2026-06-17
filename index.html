@@ -246,6 +246,15 @@
   .status-online { color: var(--success); }
   .status-away { color: var(--gold); }
   .status-offline { color: var(--gray-400); }
+
+  /* SIDEBAR TABS */
+  .sidebar-tab-panel { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+  .sidebar-tab-panel.hidden { display: none !important; }
+  .sidebar-tab-nav { display: flex; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.15); padding: 8px 12px; justify-content: space-around; align-items: center; flex-shrink: 0; }
+  .sidebar-nav-btn { background: none; border: none; color: var(--gray-400); width: 44px; height: 44px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 22px; transition: all 0.2s; }
+  .sidebar-nav-btn:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+  .sidebar-nav-btn.active { color: var(--gold); background: rgba(232,160,32,0.12); }
+  .settings-menu-btn:hover { background: rgba(255,255,255,0.08) !important; }
 </style>
 </head>
 <body>
@@ -309,42 +318,80 @@
       </div>
     </div>
 
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">
-        Direct Messages
-        <button class="sidebar-add" onclick="openModal('newDMModal')" title="New Direct Message">
-          <i class="ti ti-edit"></i>
+    <!-- Tab panels container -->
+    <div id="dmTabPanel" class="sidebar-tab-panel">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">
+          Direct Messages
+          <button class="sidebar-add" onclick="openModal('newDMModal')" title="New Direct Message">
+            <i class="ti ti-edit"></i>
+          </button>
+        </div>
+      </div>
+      <div id="dmList" class="chat-list" style="flex: 1; overflow-y: auto;"></div>
+    </div>
+
+    <div id="groupTabPanel" class="sidebar-tab-panel hidden">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">
+          Groups
+          <button class="sidebar-add" onclick="openModal('newGroupModal')" title="New Group">
+            <i class="ti ti-users-plus"></i>
+          </button>
+        </div>
+      </div>
+      <div id="groupList" class="chat-list" style="flex: 1; overflow-y: auto;"></div>
+    </div>
+
+    <div id="broadcastTabPanel" class="sidebar-tab-panel hidden">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">
+          Broadcasts
+          <button class="sidebar-add" onclick="openModal('newBroadcastModal')" title="New Broadcast">
+            <i class="ti ti-speakerphone"></i>
+          </button>
+        </div>
+      </div>
+      <div id="broadcastList" class="chat-list" style="flex: 1; overflow-y: auto;"></div>
+    </div>
+
+    <div id="settingsTabPanel" class="sidebar-tab-panel hidden" style="flex: 1; padding: 16px; overflow-y: auto;">
+      <div class="sidebar-section-label" style="margin-bottom: 16px; color: var(--gray-400);">Settings</div>
+      
+      <!-- User Profile Summary Card -->
+      <div style="background: rgba(255,255,255,0.04); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.06);">
+        <div id="settingsAvatar" style="width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #000; background: var(--gold);">MA</div>
+        <div style="text-align: center;">
+          <div id="settingsName" style="font-size: 14px; font-weight: 600; color: var(--white);">John Doe</div>
+          <div id="settingsEmp" style="font-size: 11px; color: var(--gray-400); margin-top: 2px;">VC0646 · ITI FINANCE</div>
+          <div id="settingsRole" style="font-size: 10px; font-weight: 700; color: var(--gold); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Admin</div>
+        </div>
+      </div>
+
+      <!-- Settings Actions List -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="settings-menu-btn" onclick="openModal('profileModal')" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); color: var(--white); text-align: left; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s; border: none; outline: none;">
+          <i class="ti ti-user-circle" style="font-size: 18px; color: var(--gold);"></i> My Profile
         </button>
+        
+        <button id="settingsManageBtn" class="settings-menu-btn hidden" onclick="openModal('manageEmployeesModal');renderEmployeeTable()" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); color: var(--white); text-align: left; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s; border: none; outline: none;">
+          <i class="ti ti-users" style="font-size: 18px; color: var(--gold);"></i> Manage Employees
+        </button>
+
+        <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">
+          <button class="settings-menu-btn" onclick="signOut()" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: rgba(226,75,74,0.1); border: 1px solid rgba(226,75,74,0.2); border-radius: var(--radius-sm); color: #FF6B6B; text-align: left; cursor: pointer; font-size: 13px; font-weight: 600; transition: background 0.2s; border: none; outline: none;">
+            <i class="ti ti-logout" style="font-size: 18px;"></i> Sign Out
+          </button>
+        </div>
       </div>
     </div>
-    <div id="dmList" class="chat-list" style="max-height: 200px;"></div>
 
-    <div class="sidebar-section" style="margin-top:8px;">
-      <div class="sidebar-section-label">
-        Groups
-        <button class="sidebar-add" onclick="openModal('newGroupModal')" title="New Group">
-          <i class="ti ti-users-plus"></i>
-        </button>
-      </div>
-    </div>
-    <div id="groupList" class="chat-list" style="max-height: 160px;"></div>
-
-    <div class="sidebar-section" style="margin-top:8px;">
-      <div class="sidebar-section-label">
-        Broadcasts
-        <button class="sidebar-add" onclick="openModal('newBroadcastModal')" title="New Broadcast">
-          <i class="ti ti-speakerphone"></i>
-        </button>
-      </div>
-    </div>
-    <div id="broadcastList" class="chat-list" style="max-height: 120px;"></div>
-
-    <div style="flex:1;"></div>
-    <div class="sidebar-footer">
-      <button class="sidebar-icon-btn" title="Profile" onclick="openModal('profileModal')"><i class="ti ti-user-circle"></i></button>
-      <button class="sidebar-icon-btn hidden" id="manageEmployeesBtn" title="Manage Employees" onclick="openModal('manageEmployeesModal');renderEmployeeTable()"><i class="ti ti-users"></i></button>
-      <button class="sidebar-icon-btn" title="Notifications"><i class="ti ti-bell"></i></button>
-      <button class="sidebar-icon-btn" title="Sign Out" onclick="signOut()" style="color:#E24B4A;"><i class="ti ti-logout"></i></button>
+    <!-- Sidebar bottom navigation matching the user's requested icons -->
+    <div class="sidebar-tab-nav">
+      <button class="sidebar-nav-btn active" onclick="switchSidebarTab('dm')" title="Direct Messages"><i class="ti ti-user-circle"></i></button>
+      <button class="sidebar-nav-btn" onclick="switchSidebarTab('group')" title="Groups"><i class="ti ti-users"></i></button>
+      <button class="sidebar-nav-btn" onclick="switchSidebarTab('broadcast')" title="Broadcasts"><i class="ti ti-speakerphone"></i></button>
+      <button class="sidebar-nav-btn" onclick="switchSidebarTab('settings')" title="Settings"><i class="ti ti-settings"></i></button>
     </div>
   </div>
 
@@ -1080,6 +1127,7 @@ function loginAs(user) {
   }
 
   startRealTimeListeners();
+  switchSidebarTab('dm');
 }
 
 function signOut() {
@@ -1161,16 +1209,91 @@ function signOut() {
     profileAvatar.style.background = 'var(--gold)';
   }
 
+  // Reset settings tab fields
+  const settingsAvatar = document.getElementById('settingsAvatar');
+  if (settingsAvatar) {
+    settingsAvatar.textContent = '';
+    settingsAvatar.style.background = 'var(--gold)';
+  }
+  const settingsName = document.getElementById('settingsName');
+  if (settingsName) settingsName.textContent = '';
+  const settingsEmp = document.getElementById('settingsEmp');
+  if (settingsEmp) settingsEmp.textContent = '';
+  const settingsRole = document.getElementById('settingsRole');
+  if (settingsRole) settingsRole.textContent = '';
+
   // Close all open modals
   document.querySelectorAll('.modal-backdrop').forEach(modal => {
     modal.classList.add('hidden');
   });
 
   // Toggle screens
+  switchSidebarTab('dm');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginId').value = '';
   document.getElementById('loginPass').value = '';
+}
+
+// ─── SIDEBAR TAB NAVIGATION ────────────────────────────────────────────────
+let activeSidebarTab = 'dm';
+function switchSidebarTab(tabName) {
+  activeSidebarTab = tabName;
+  
+  // Update nav buttons
+  const buttons = document.querySelectorAll('.sidebar-nav-btn');
+  buttons.forEach(btn => {
+    const isTarget = btn.getAttribute('onclick').includes(`'${tabName}'`);
+    btn.classList.toggle('active', isTarget);
+  });
+  
+  // Update tab panels
+  document.getElementById('dmTabPanel').classList.toggle('hidden', tabName !== 'dm');
+  document.getElementById('groupTabPanel').classList.toggle('hidden', tabName !== 'group');
+  document.getElementById('broadcastTabPanel').classList.toggle('hidden', tabName !== 'broadcast');
+  document.getElementById('settingsTabPanel').classList.toggle('hidden', tabName !== 'settings');
+  
+  // If settings tab, render user details
+  if (tabName === 'settings') {
+    renderSettingsTab();
+  }
+}
+
+function renderSettingsTab() {
+  if (!currentUser) return;
+  
+  // Avatar
+  const avatarEl = document.getElementById('settingsAvatar');
+  if (avatarEl) {
+    if (currentUser.avatarUrl) {
+      avatarEl.innerHTML = `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+      avatarEl.style.background = 'none';
+    } else {
+      avatarEl.textContent = currentUser.initials;
+      avatarEl.style.background = currentUser.color;
+    }
+  }
+  
+  // Details
+  const nameEl = document.getElementById('settingsName');
+  if (nameEl) nameEl.innerHTML = getNameWithBadgeHtml(currentUser, `${currentUser.firstName} ${currentUser.lastName}`);
+  
+  const empEl = document.getElementById('settingsEmp');
+  if (empEl) empEl.textContent = `${currentUser.empId} · ${currentUser.dept}`;
+  
+  const roleEl = document.getElementById('settingsRole');
+  if (roleEl) roleEl.textContent = currentUser.role || 'Employee';
+  
+  // Manage button visibility
+  const manageBtn = document.getElementById('settingsManageBtn');
+  if (manageBtn) {
+    const allowedRoles = ['Admin', 'HR', 'CEO', 'Team Leader', 'Management'];
+    if (currentUser.role && allowedRoles.includes(currentUser.role)) {
+      manageBtn.classList.remove('hidden');
+    } else {
+      manageBtn.classList.add('hidden');
+    }
+  }
 }
 
 // ─── FIRESTORE LISTENERS ───────────────────────────────────────────────────
